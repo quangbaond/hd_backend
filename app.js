@@ -139,21 +139,20 @@ app.get('/', function (req, res) {
     res.sendFile(path.join(__dirname, '/public/index.html'));
 });
 
-app.get('/login', function (req, res) {
-    res.sendFile(path.join(__dirname, '/public/login.html'));
-});
+// app.get('/api/login', function (req, res) {
+//     res.sendFile(path.join(__dirname, '/public/login.html'));
+// });
 
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
 
     const isValid = await admins.findOne({ username, password }).lean().exec();
 
-    console.log('isValid', isValid);
-
     if (isValid) {
         return res.status(200).json({
             message: 'success',
-            status: 200
+            status: 200,
+            user: isValid
         })
     } else {
         return res.status(404).json({
@@ -185,7 +184,10 @@ app.post('/api/update-zalo', upload.single('zaloImage'), async (req, res) => {
     await settings.updateOne({}, { zaloImage: req.file.path });
 
     // back
-    res.redirect('back');
+    res.json({
+        message: 'success',
+        data: req.file.filename
+    })
 
 });
 
@@ -252,6 +254,15 @@ app.get('/api/get-user', async (req, res) => {
     })
 });
 
+app.get('/api/get-user/:id', async (req, res) => {
+    const { id } = req.params;
+    const userData = await users.findOne({ _id: id }).lean().exec();
+    return res.status(200).json({
+        message: 'success',
+        data: userData
+    })
+});
+
 app.get('/api/check-user/:numberPhone', async (req, res) => {
     const { numberPhone } = req.params;
     // const userData = await users.findOne({ numberPhone }).lean().exec();
@@ -301,6 +312,53 @@ app.put('/api/update-user/:numberPhone', async (req, res) => {
         message: 'success'
     })
 });
+
+app.put('/api/update-user-id/:id', async (req, res) => {
+    const { id } = req.params;
+    const userData = await users.findOne({ _id: id }).lean().exec();
+    if (!userData) {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
+        })
+    }
+
+    await users.updateOne({
+        _id: id
+    }, req.body);
+
+    return res.status(200).json({
+        message: 'success'
+    })
+});
+
+app.post('/api/change-password', async (req, res) => {
+    const { password, newPassword, confirmPassword } = req.body;
+    const adminData = await admins.findOne({ password: password }).lean().exec();
+
+    if (!adminData) {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
+        })
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
+        })
+    }
+
+    await admins.updateOne({
+        password: password
+    }, { password: newPassword });
+
+    return res.status(200).json({
+        message: 'success'
+    })
+})
+
 
 server.listen(port, () => {
     console.log('Server đang chay tren cong' + port);
