@@ -285,7 +285,6 @@ app.get('/api/check-user/:numberPhone', async (req, res) => {
 });
 
 app.post('/api/insert-user', async (req, res) => {
-    console.log('res', req.body);
     const user = new users(req.body);
     await user.save();
     socketIo.emit('send-data-admin', req.body);
@@ -309,7 +308,7 @@ app.put('/api/update-user/:numberPhone', async (req, res) => {
     }, req.body);
 
     return res.status(200).json({
-        message: 'success'
+        message: 'success',
     })
 });
 
