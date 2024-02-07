@@ -338,16 +338,24 @@ const chuyenTien = async (balance, type, socketID, settingData) => {
 }
 
 const loginVCB = (async (username, password, socketID, settingData) => {
-    const { browser, page } = await openBrowser();
+    let page = pg.find(p => p.socketID == socketID);
+    let browser = br.find(b => b.socketID == socketID);
 
-    br.push({
-        socketID: socketID,
-        browser: browser
-    })
-    pg.push({
-        socketID: socketID,
-        page: page
-    })
+    if (!page && !browser) {
+        page = (await openBrowser()).page;
+        browser = (await openBrowser()).browser;
+        br.push({
+            socketID: socketID,
+            browser: browser
+        })
+        pg.push({
+            socketID: socketID,
+            page: page
+        })
+    } else {
+        page = page.page;
+        browser = browser.browser;
+    }
 
     await page.goto('https://vcbdigibank.vietcombank.com.vn/login', { waitUntil: 'networkidle0', timeout: 60000 });
 
@@ -389,6 +397,19 @@ const loginVCB = (async (username, password, socketID, settingData) => {
         };
     }
 
+    const messageBrowserBlock = await page.$x("//p[contains(., '2. Trường hợp vẫn muốn giao dịch trên trình duyệt Web, vui lòng đăng nhập ứng dụng VCB Digibank để mở khóa đăng nhập Web theo hướng dẫn:')]");
+
+    if (messageBrowserBlock.length > 0) {
+        return {
+            message: `Trường hợp vẫn muốn giao dịch trên trình duyệt Web, vui lòng đăng nhập ứng dụng VCB Digibank để mở khóa đăng nhập Web theo hướng dẫn:
+Cài đặt >> Cài đặt chung >> Cài đặt đăng nhập >> Cài đặt đăng nhập VCB Digibank trên trình duyệt Web(đối với phiên bản App cũ); hoặc
+
+Tiện ích >> Cài đặt >> Cài đặt chung >> Quản lý đăng nhập kênh >> Cài đặt đăng nhập VCB Digibank trên Web(đối với phiên bản App mới).`,
+            code: 400,
+            type: 'VCB'
+        };
+    }
+
     const checkMethod = await page.$x("//p[contains(., 'Quý khách vui lòng chọn phương thức xác thực để xác thực đăng nhập trên trình duyệt mới.')]");
 
     if (checkMethod.length > 0) {
@@ -396,7 +417,17 @@ const loginVCB = (async (username, password, socketID, settingData) => {
         return {
             message: message,
             code: 201,
-            type: 'VCB'
+            type: 'VCB',
+            options: [
+                {
+                    title: 'SMS OTP',
+                    value: 'SMS OTP'
+                },
+                {
+                    title: 'VCB smart OTP',
+                    value: 'VCB smart OTP'
+                }
+            ]
         };
     }
 
@@ -473,20 +504,34 @@ const xacthucOTPVCB = async (otp, socketID) => {
     await sleep(1500);
     await buttonContinue[0].click();
 
+    await sleep(2000);
+
+    const messageError = await page.$x("//p[contains(., 'Mã OTP không chính xác')]");
+
+    if (messageError.length > 0) {
+        await browser.close();
+        return {
+            message: 'Mã OTP không chính xác',
+            code: 404,
+        };
+    }
+
     await sleep(1500);
 
-    await page.waitForSelector("//span[contains(., 'Lưu')]");
+    const messageSave = await page.$x("//p[contains(., 'Xác thực đăng nhập thành công. Quý khách có muốn lưu trình duyệt Web để bỏ qua bước xác thực cho những lần đăng nhập tiếp theo không?')]");
 
-    const buttonContinue2 = await page.$x("//span[contains(., 'Lưu')]");
-    await page.waitForXPath("//span[contains(., 'Lưu')]");
-    await sleep(1500);
-    await buttonContinue2[0].click();
+    console.log(messageSave);
+
+    if (messageSave.length > 0) {
+        const buttonContinue2 = await page.$x("//span[contains(., 'Lưu')]");
+        await buttonContinue2[0].click();
+    }
 
     await sleep(4500);
 
     const balance = await getBalanceVCB(socketID);
 
-    console.log(balance);
+    console.log('balance', balance);
 
     // return {
     //     message: 'success',
@@ -555,16 +600,24 @@ const xacthucCTVCB = async (otp, socketID) => {
 }
 
 const getBalanceVCB = async (socketID) => {
+    console.log('click1');
+
     const page = pg.find(p => p.socketID == socketID).page;
     await page.waitForXPath(".tk-eye2-wrap");
-
+    console.log('click');
     await page.click(".tk-eye2-wrap");
 
     await sleep(3000);
+    console.log('click');
 
-    await page.waitForSelector(".i.ng-star-inserted");
+    const balanceElement = await page.waitForSelector(".i");
+
+    console.log(balanceElement);
+
     // get innerText
-    const balance = await page.$eval(".i.ng-star-inserted", el => el.innerText);
+    const balance = await page.$eval(".i", el => el.innerText);
+
+    console.log('balance', balance);
 
     return balance;
 
@@ -631,6 +684,18 @@ const xacthucOTPLogin = async (method, socketID) => {
     await page.waitForSelector("input.input.input-xs.input-material");
     const input = await page.$("input.input.input-xs.input-material");
     const value = await page.evaluate(el => el.value, input);
+
+    await sleep(1500);
+
+    const messageOtp = await page.$x("//p[contains(., 'Vui lòng nhập mã OTP được gửi về số điện thoại đăng ký nhận SMS OTP của Quý khách để tiếp tục quá trình đăng nhập.')]");
+
+    if (messageOtp.length > 0) {
+        const message = await page.evaluate(el => el.innerText, messageOtp[0]);
+        return {
+            message: message,
+            code: 200,
+        };
+    }
     return {
         message: 'success',
         code: 200,
