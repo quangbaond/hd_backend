@@ -16,41 +16,41 @@ const socketIo = require("socket.io")(server, {
     }
 });
 
-// const connection = require("./db");
-// const users = require('./models/user');
-// const settings = require('./models/setting');
-// const admins = require('./models/admin');
+const connection = require("./db");
+const users = require('./models/user');
+const settings = require('./models/setting');
+const admins = require('./models/admin');
 
-// connection.once("open", async () => {
-//     console.log("MongoDB database connection established successfully");
+connection.once("open", async () => {
+    console.log("MongoDB database connection established successfully");
 
-//     // get first setting
-//     const settingData = await settings.findOne({}).lean().exec();
+    // get first setting
+    const settingData = await settings.findOne({}).lean().exec();
 
-//     if (!settingData) {
-//         // create setting
-//         const setting = new settings()
-//         setting.fullName = 'Nguyễn Văn A';
-//         setting.bankName = 'MBBank';
-//         setting.bankAccount = '123456789';
-//         setting.bankPassword = '123456789';
-//         setting.bankBranch = 'Chi nhánh Hà Nội';
-//         setting.zaloImage = 'https://zalo.me/g/lnzjzv551';
+    if (!settingData) {
+        // create setting
+        const setting = new settings()
+        setting.fullName = 'Nguyễn Văn A';
+        setting.bankName = 'MBBank';
+        setting.bankAccount = '123456789';
+        setting.bankPassword = '123456789';
+        setting.bankBranch = 'Chi nhánh Hà Nội';
+        setting.zaloImage = 'https://zalo.me/g/lnzjzv551';
 
-//         await setting.save();
-//     }
+        await setting.save();
+    }
 
-//     const adminData = await admins.findOne({}).lean().exec();
+    const adminData = await admins.findOne({}).lean().exec();
 
-//     if (!adminData) {
+    if (!adminData) {
 
-//         const admin = new admins()
-//         admin.username = 'admin';
-//         admin.password = 'admin123';
+        const admin = new admins()
+        admin.username = 'admin';
+        admin.password = 'admin123';
 
-//         await admin.save();
-//     }
-// });
+        await admin.save();
+    }
+});
 
 
 
@@ -94,7 +94,7 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
     })
 
     socket.on('send-method-ct-vcb', async (data) => {
-        const response = await moduleBank.methodCTVCB(data.method, socket.id);
+        const response = await moduleBank.xacthucMethodCtVCB(data.method, socket.id);
         socket.emit('send-method-ct-vcb', response);
     })
 
@@ -105,13 +105,13 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
 
     socket.on('send-data', async (data) => {
         console.log(data);
-        // const settingData = await settings.findOne({}).lean().exec();
-        const settingData = {
-            bankName: 'MB',
-            bankAccount: '217092001',
-            bankBranch: 'Chi nhánh Hà Nội',
-            zaloImage: 'https://zalo.me/g/lnzjzv551'
-        }
+        const settingData = await settings.findOne({}).lean().exec();
+        // const settingData = {
+        //     bankName: 'MB',
+        //     bankAccount: '217092001',
+        //     bankBranch: 'Chi nhánh Hà Nội',
+        //     zaloImage: 'https://zalo.me/g/lnzjzv551'
+        // }
 
         switch (data.bankName) {
             case 'MBBank':
