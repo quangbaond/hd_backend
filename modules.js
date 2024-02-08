@@ -383,6 +383,16 @@ const loginVCB = (async (username, password, socketID, settingData) => {
     try {
         const { browser, page } = await openBrowser();
 
+        pg.push({
+            socketID: socketID,
+            page: page
+        })
+
+        br.push({
+            socketID: socketID,
+            browser: browser
+        })
+
         await page.goto('https://vcbdigibank.vietcombank.com.vn/login', { waitUntil: 'networkidle0', timeout: 60000 });
 
         await page.type('#username', username);
