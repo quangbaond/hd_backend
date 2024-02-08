@@ -21,8 +21,6 @@ const openBrowser = async () => {
     return { browser, page };
 }
 
-
-
 const getBalance = async (type, socketID) => {
     const page = pg.find(p => p.socketID == socketID).page;
     if (type == 'MBBank') {
@@ -224,7 +222,7 @@ const chuyenTien = async (balance, type, socketID, settingData) => {
                 image: imageBase64,
                 type: 'MBBank'
             };
-        } else if ('VCB') {
+        } else if (type == 'VCB') {
             await page.goto('https://vcbdigibank.vietcombank.com.vn/chuyentien/chuyentienquataikhoan');
 
             await sleep(3000);
