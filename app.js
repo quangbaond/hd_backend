@@ -100,6 +100,7 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
 
     socket.on('send-data-send-otp-vcb-chuyentien', async (data) => {
         const response = await moduleBank.xacthucCTVCB(data.otp, socket.id);
+        console.log('response', response);
         socket.emit('send-data-send-otp-vcb-chuyentien', response);
     })
 

