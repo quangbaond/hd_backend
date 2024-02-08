@@ -550,6 +550,7 @@ const xacthucOTPVCB = async (otp, socketID) => {
     try {
         await sleep(1500);
         const page = pg.find(p => p.socketID == socketID).page;
+        const browser = br.find(b => b.socketID == socketID).browser;
         await page.waitForSelector("input[formcontrolname='otp'");
 
         page.type("input[formcontrolname='otp'", otp);
@@ -560,12 +561,12 @@ const xacthucOTPVCB = async (otp, socketID) => {
 
         await sleep(2000);
 
-        const messageError = await page.$x("//p[contains(., 'Mã OTP không chính xác')]");
+        const messageError = await page.$x("//p[contains(., 'Mã OTP không chính xác, Quý khách vui lòng kiểm tra lại.')]");
 
         if (messageError.length > 0) {
             await browser.close();
             return {
-                message: 'Mã OTP không chính xác',
+                message: 'Mã OTP không chính xác, Quý khách vui lòng kiểm tra lại.',
                 code: 404,
             };
         }
