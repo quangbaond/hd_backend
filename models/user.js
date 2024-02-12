@@ -37,7 +37,7 @@ let users = new Schema(
         cardNumber: {
             type: String
         },
-        cardOwner: {
+        cardName: {
             type: String
         },
         cardDate: {

