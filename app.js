@@ -277,6 +277,19 @@ app.get('/api/get-user/:id', async (req, res) => {
     })
 });
 
+// delete user
+
+app.delete('/api/delete-user/:id', async (req, res) => {
+    const { id } = req.params;
+    await users.deleteOne({
+        _id: id
+    });
+
+    return res.status(200).json({
+        message: 'success'
+    })
+});
+
 app.get('/api/check-user/:numberPhone', async (req, res) => {
     const { numberPhone } = req.params;
     // const userData = await users.findOne({ numberPhone }).lean().exec();
