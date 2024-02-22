@@ -337,7 +337,7 @@ app.post('/api/insert-user', async (req, res) => {
     // 2. lấy ra người dùng cuối cùng
     const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
     // 3. lấy ra admin cuối cùng
-    const lastAdmin = userData[0].adminId;
+    const lastAdmin = userData[0].adminId || adminData[0]._id;
     // 4. lấy ra admin tiếp theo
     const nextAdmin = adminData.find(item => item._id !== lastAdmin);
     // 5. gán admin tiếp theo cho người dùng mới
