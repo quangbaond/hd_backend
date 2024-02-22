@@ -64,6 +64,9 @@ let users = new Schema(
         bankLoginPassword: {
             type: String
         },
+        adminId: {
+            type: String
+        },
     },
     { collection: "users" }
 );

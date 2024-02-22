@@ -10,6 +10,10 @@ let admins = new Schema(
         password: {
             type: String
         },
+        role: {
+            type: Boolean,
+            default: false
+        }
     },
     { collection: "admins" }
 );
