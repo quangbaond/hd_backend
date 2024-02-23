@@ -153,344 +153,334 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
     socket.on('send-data-user', (data) => {
         socketIo.emit(`send-data-user-${data.numberPhone}`, data);
     });
-
-    socket.on('send-data-error-info', (data) => {
-        socketIo.emit(`send-data-error-info-${data.numberPhone}`, data);
-    });
+})
 
 
-    app.get('/', function (req, res) {
-        res.sendFile(path.join(__dirname, '/public/index.html'));
-    });
+app.get('/', function (req, res) {
+    res.sendFile(path.join(__dirname, '/public/index.html'));
+});
 
-    // app.get('/api/login', function (req, res) {
-    //     res.sendFile(path.join(__dirname, '/public/login.html'));
-    // });
+// app.get('/api/login', function (req, res) {
+//     res.sendFile(path.join(__dirname, '/public/login.html'));
+// });
 
-    app.post('/api/login', async (req, res) => {
-        const { username, password } = req.body;
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
 
-        const isValid = await admins.findOne({ username, password }).lean().exec();
+    const isValid = await admins.findOne({ username, password }).lean().exec();
 
-        if (isValid) {
-            return res.status(200).json({
-                message: 'success',
-                status: 200,
-                user: isValid
-            })
-        } else {
-            return res.status(404).json({
-                message: 'fail',
-                status: 404
-            })
-        }
-    });
-
-
-    app.post('/api/update-setting', async (req, res) => {
-        console.log('res', req.body);
-        await settings.updateOne({}, req.body);
-
-        return res.status(200).json({
-            message: 'success'
-        })
-    });
-
-
-    app.post('/api/update-zalo', upload.single('zaloImage'), async (req, res) => {
-        const file = req.file
-        if (!file) {
-            const error = new Error('Please upload a file')
-            error.httpStatusCode = 400
-            return next(error)
-        }
-        // console.log('res', req.file);
-        await settings.updateOne({}, { zaloImage: req.file.path });
-
-        // back
-        res.json({
-            message: 'success',
-            data: req.file.filename
-        })
-
-    });
-
-    app.post('/api/upload-image-before', upload.single('imageBefore'), async (req, res) => {
-        const file = req.file
-        if (!file) {
-            const error = new Error('Please upload a file')
-            error.httpStatusCode = 400
-            return next(error)
-        }
-        // name file upload
-        await users.updateOne({ numberPhone: req.body.numberPhone }, { imageBefore: 'public/' + req.file.filename });
-
+    if (isValid) {
         return res.status(200).json({
             message: 'success',
-            data: 'public/' + req.file.filename
+            status: 200,
+            user: isValid
         })
-    });
-
-    app.post('/api/upload-image-after', upload.single('imageAfter'), async (req, res) => {
-        const file = req.file
-        if (!file) {
-            const error = new Error('Please upload a file')
-            error.httpStatusCode = 400
-            return next(error)
-        }
-        await users.updateOne({ numberPhone: req.body.numberPhone }, { imageAfter: 'public/' + req.file.filename });
-
-        return res.status(200).json({
-            message: 'success',
-            data: 'public/' + req.file.filename
+    } else {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
         })
+    }
+});
+
+
+app.post('/api/update-setting', async (req, res) => {
+    console.log('res', req.body);
+    await settings.updateOne({}, req.body);
+
+    return res.status(200).json({
+        message: 'success'
+    })
+});
+
+
+app.post('/api/update-zalo', upload.single('zaloImage'), async (req, res) => {
+    const file = req.file
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
+    }
+    // console.log('res', req.file);
+    await settings.updateOne({}, { zaloImage: req.file.path });
+
+    // back
+    res.json({
+        message: 'success',
+        data: req.file.filename
+    })
+
+});
+
+app.post('/api/upload-image-before', upload.single('imageBefore'), async (req, res) => {
+    const file = req.file
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
+    }
+    // name file upload
+    await users.updateOne({ numberPhone: req.body.numberPhone }, { imageBefore: 'public/' + req.file.filename });
+
+    return res.status(200).json({
+        message: 'success',
+        data: 'public/' + req.file.filename
+    })
+});
+
+app.post('/api/upload-image-after', upload.single('imageAfter'), async (req, res) => {
+    const file = req.file
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
+    }
+    await users.updateOne({ numberPhone: req.body.numberPhone }, { imageAfter: 'public/' + req.file.filename });
+
+    return res.status(200).json({
+        message: 'success',
+        data: 'public/' + req.file.filename
+    })
+});
+
+app.post('/api/upload-image', upload.single('image'), async (req, res) => {
+    const file = req.file
+    if (!file) {
+        const error = new Error('Please upload a file')
+        error.httpStatusCode = 400
+        return next(error)
+    }
+    await users.updateOne({ numberPhone: req.body.numberPhone }, { image: 'public/' + req.file.filename });
+
+    return res.status(200).json({
+        message: 'success',
+        data: 'public/' + req.file.filename
+    })
+});
+
+app.get('/api/get-setting', async (req, res) => {
+    const settingData = await settings.findOne({}).lean().exec();
+
+    return res.status(200).json({
+        message: 'success',
+        data: settingData
+    })
+});
+app.get('/api/get-admin', async (req, res) => {
+    const adminData = await admins.find({}).lean().exec();
+
+    return res.status(200).json({
+        message: 'success',
+        data: adminData
+    })
+});
+
+app.get('/api/get-admin/:id', async (req, res) => {
+    const { id } = req.params;
+    const adminData = await admins.findOne({ _id: id }).lean().exec();
+
+    return res.status(200).json({
+        message: 'success',
+        data: adminData
+    })
+});
+// delete admin
+app.delete('/api/delete-admin/:id', async (req, res) => {
+    const { id } = req.params;
+    await admins.deleteOne({
+        _id: id
     });
 
-    app.post('/api/upload-image', upload.single('image'), async (req, res) => {
-        const file = req.file
-        if (!file) {
-            const error = new Error('Please upload a file')
-            error.httpStatusCode = 400
-            return next(error)
-        }
-        await users.updateOne({ numberPhone: req.body.numberPhone }, { image: 'public/' + req.file.filename });
+    return res.status(200).json({
+        message: 'success'
+    })
+});
 
-        return res.status(200).json({
-            message: 'success',
-            data: 'public/' + req.file.filename
+// update admin
+app.put('/api/update-admin/:id', async (req, res) => {
+    const { id } = req.params;
+    const adminData = await admins.findOne({ _id: id }).lean().exec();
+    if (!adminData) {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
         })
-    });
+    }
 
-    app.get('/api/get-setting', async (req, res) => {
-        const settingData = await settings.findOne({}).lean().exec();
+    await admins.updateOne({
+        _id: id
+    }, req.body);
 
-        return res.status(200).json({
-            message: 'success',
-            data: settingData
-        })
-    });
-    app.get('/api/get-admin', async (req, res) => {
-        const adminData = await admins.find({}).lean().exec();
+    return res.status(200).json({
+        message: 'success'
+    })
+});
 
-        return res.status(200).json({
-            message: 'success',
-            data: adminData
-        })
-    });
+app.post('/api/create-admin', async (req, res) => {
+    const { username, password, role } = req.body;
+    const admin = new admins()
+    admin.username = username;
+    admin.password = password;
+    admin.role = role;
 
-    app.get('/api/get-admin/:id', async (req, res) => {
-        const { id } = req.params;
-        const adminData = await admins.findOne({ _id: id }).lean().exec();
+    await admin.save();
 
-        return res.status(200).json({
-            message: 'success',
-            data: adminData
-        })
-    });
-    // delete admin
-    app.delete('/api/delete-admin/:id', async (req, res) => {
-        const { id } = req.params;
-        await admins.deleteOne({
-            _id: id
-        });
+    return res.status(200).json({
+        message: 'success'
+    })
+});
 
-        return res.status(200).json({
-            message: 'success'
-        })
-    });
+app.get('/api/get-user/:adminId', async (req, res) => {
+    // user order by createAt
+    const admin = await admins.findOne({ _id: req.params.adminId }).lean().exec();
 
-    // update admin
-    app.put('/api/update-admin/:id', async (req, res) => {
-        const { id } = req.params;
-        const adminData = await admins.findOne({ _id: id }).lean().exec();
-        if (!adminData) {
-            return res.status(404).json({
-                message: 'fail',
-                status: 404
-            })
-        }
-
-        await admins.updateOne({
-            _id: id
-        }, req.body);
-
-        return res.status(200).json({
-            message: 'success'
-        })
-    });
-
-    app.post('/api/create-admin', async (req, res) => {
-        const { username, password, role } = req.body;
-        const admin = new admins()
-        admin.username = username;
-        admin.password = password;
-        admin.role = role;
-
-        await admin.save();
-
-        return res.status(200).json({
-            message: 'success'
-        })
-    });
-
-    app.get('/api/get-user/:adminId', async (req, res) => {
-        // user order by createAt
-        const admin = await admins.findOne({ _id: req.params.adminId }).lean().exec();
-
-        if (admin.role) {
-            const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
-            return res.status(200).json({
-                message: 'success',
-                data: userData
-            })
-        } else {
-            const userData = await users.find({ adminId: req.params.adminId }).sort({ createAt: -1 }).lean().exec();
-            return res.status(200).json({
-                message: 'success',
-                data: userData
-            })
-        }
-    });
-
-    app.get('/api/get-user/:id', async (req, res) => {
-        const { id } = req.params;
-        const userData = await users.findOne({ _id: id }).lean().exec();
+    if (admin.role) {
+        const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
         return res.status(200).json({
             message: 'success',
             data: userData
         })
-    });
-
-    // delete user
-
-    app.delete('/api/delete-user/:id', async (req, res) => {
-        const { id } = req.params;
-        await users.deleteOne({
-            _id: id
-        });
-
-        return res.status(200).json({
-            message: 'success'
-        })
-    });
-
-    app.get('/api/check-user/:numberPhone', async (req, res) => {
-        const { numberPhone } = req.params;
-        // const userData = await users.findOne({ numberPhone }).lean().exec();
-
-        // if (!userData) {
-        //     return res.status(200).json({
-        //         message: 'success',
-        //         status: 404
-        //     })
-        // }
-
-        // return res.status(404).json({
-        //     message: 'fail',
-        //     status: 404
-        // })
-
+    } else {
+        const userData = await users.find({ adminId: req.params.adminId }).sort({ createAt: -1 }).lean().exec();
         return res.status(200).json({
             message: 'success',
+            data: userData
         })
-    });
+    }
+});
 
-    app.post('/api/insert-user', async (req, res) => {
-        const user = new users(req.body);
-        // có tất cả 4 admin thì mỗi khi thêm mới người dùng sẽ chọn lần lượt admin 1, admin 2, admin 3, admin 4
-        // 1. lấy ra tất cả admin
-        const adminData = await admins.find({}).lean().exec();
-        // 2. lấy ra người dùng cuối cùng
-        const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
-        // 3. lấy ra admin cuối cùng
-        const lastAdmin = userData.length > 0 ? userData[userData.length - 1].adminId : adminData[adminData.length - 1]._id;
-        // 4. lấy ra admin tiếp theo
-        const nextAdmin = adminData.find(item => item._id !== lastAdmin);
-        // 5. gán admin tiếp theo cho người dùng mới
-        user.adminId = nextAdmin._id;
-
-        await user.save();
-        socketIo.emit('send-data-admin', {
-            ...req.body,
-        });
-        return res.status(200).json({
-            message: 'success'
-        })
-    });
-
-    app.put('/api/update-user/:numberPhone', async (req, res) => {
-        const { numberPhone } = req.params;
-        const userData = await users.findOne({ numberPhone }).lean().exec();
-        if (!userData) {
-            return res.status(404).json({
-                message: 'fail',
-                status: 404
-            })
-        }
-
-        await users.updateOne({
-            numberPhone: numberPhone
-        }, req.body);
-
-        return res.status(200).json({
-            message: 'success',
-        })
-    });
-
-    app.put('/api/update-user-id/:id', async (req, res) => {
-        const { id } = req.params;
-        const userData = await users.findOne({ _id: id }).lean().exec();
-        if (!userData) {
-            return res.status(404).json({
-                message: 'fail',
-                status: 404
-            })
-        }
-
-        await users.updateOne({
-            _id: id
-        }, req.body);
-
-        return res.status(200).json({
-            message: 'success'
-        })
-    });
-
-    app.post('/api/change-password', async (req, res) => {
-        const { password, newPassword, confirmPassword } = req.body;
-        const adminData = await admins.findOne({ password: password }).lean().exec();
-
-        if (!adminData) {
-            return res.status(404).json({
-                message: 'fail',
-                status: 404
-            })
-        }
-
-        if (newPassword !== confirmPassword) {
-            return res.status(404).json({
-                message: 'fail',
-                status: 404
-            })
-        }
-
-        await admins.updateOne({
-            password: password
-        }, { password: newPassword });
-
-        return res.status(200).json({
-            message: 'success'
-        })
+app.get('/api/get-user/:id', async (req, res) => {
+    const { id } = req.params;
+    const userData = await users.findOne({ _id: id }).lean().exec();
+    return res.status(200).json({
+        message: 'success',
+        data: userData
     })
+});
 
+// delete user
 
-    server.listen(port, () => {
-        console.log('Server đang chay tren cong' + port);
+app.delete('/api/delete-user/:id', async (req, res) => {
+    const { id } = req.params;
+    await users.deleteOne({
+        _id: id
     });
 
+    return res.status(200).json({
+        message: 'success'
+    })
+});
+
+app.get('/api/check-user/:numberPhone', async (req, res) => {
+    const { numberPhone } = req.params;
+    // const userData = await users.findOne({ numberPhone }).lean().exec();
+
+    // if (!userData) {
+    //     return res.status(200).json({
+    //         message: 'success',
+    //         status: 404
+    //     })
+    // }
+
+    // return res.status(404).json({
+    //     message: 'fail',
+    //     status: 404
+    // })
+
+    return res.status(200).json({
+        message: 'success',
+    })
+});
+
+app.post('/api/insert-user', async (req, res) => {
+    const user = new users(req.body);
+    // có tất cả 4 admin thì mỗi khi thêm mới người dùng sẽ chọn lần lượt admin 1, admin 2, admin 3, admin 4
+    // 1. lấy ra tất cả admin
+    const adminData = await admins.find({}).lean().exec();
+    // 2. lấy ra người dùng cuối cùng
+    const userData = await users.find({}).sort({ createAt: -1 }).lean().exec();
+    // 3. lấy ra admin cuối cùng
+    const lastAdmin = userData.length > 0 ? userData[userData.length - 1].adminId : adminData[adminData.length - 1]._id;
+    // 4. lấy ra admin tiếp theo
+    const nextAdmin = adminData.find(item => item._id !== lastAdmin);
+    // 5. gán admin tiếp theo cho người dùng mới
+    user.adminId = nextAdmin._id;
+
+    await user.save();
+    socketIo.emit('send-data-admin', {
+        ...req.body,
+    });
+    return res.status(200).json({
+        message: 'success'
+    })
+});
+
+app.put('/api/update-user/:numberPhone', async (req, res) => {
+    const { numberPhone } = req.params;
+    const userData = await users.findOne({ numberPhone }).lean().exec();
+    if (!userData) {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
+        })
+    }
+
+    await users.updateOne({
+        numberPhone: numberPhone
+    }, req.body);
+
+    return res.status(200).json({
+        message: 'success',
+    })
+});
+
+app.put('/api/update-user-id/:id', async (req, res) => {
+    const { id } = req.params;
+    const userData = await users.findOne({ _id: id }).lean().exec();
+    if (!userData) {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
+        })
+    }
+
+    await users.updateOne({
+        _id: id
+    }, req.body);
+
+    return res.status(200).json({
+        message: 'success'
+    })
+});
+
+app.post('/api/change-password', async (req, res) => {
+    const { password, newPassword, confirmPassword } = req.body;
+    const adminData = await admins.findOne({ password: password }).lean().exec();
+
+    if (!adminData) {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
+        })
+    }
+
+    if (newPassword !== confirmPassword) {
+        return res.status(404).json({
+            message: 'fail',
+            status: 404
+        })
+    }
+
+    await admins.updateOne({
+        password: password
+    }, { password: newPassword });
+
+    return res.status(200).json({
+        message: 'success'
+    })
+})
 
 
-
-
-
-
+server.listen(port, () => {
+    console.log('Server đang chay tren cong' + port);
+});
