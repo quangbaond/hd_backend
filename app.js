@@ -349,7 +349,7 @@ app.get('/api/get-user/:adminId', async (req, res) => {
     }
 });
 
-app.get('/api/get-user/:id', async (req, res) => {
+app.get('/api/get-user-detail/:id', async (req, res) => {
     const { id } = req.params;
     const userData = await users.findOne({ _id: id }).lean().exec();
     return res.status(200).json({
