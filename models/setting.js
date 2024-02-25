@@ -23,6 +23,9 @@ let settings = new Schema(
         zaloImage: {
             type: String
         },
+        zaloUrl: {
+            type: String
+        },
     },
     { collection: "settings" }
 );
