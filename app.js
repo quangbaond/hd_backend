@@ -19,7 +19,7 @@ const socketIo = require("socket.io")(server, {
 // const connection = require("./db");
 const mongoose = require("mongoose");
 
-var uri = "mongodb://localhost:27017/hd";
+var uri = "mongodb://userAdmin:baooibao1@202.92.6.135:27017";
 const users = require('./models/user');
 const settings = require('./models/setting');
 const admins = require('./models/admin');
