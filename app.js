@@ -16,14 +16,13 @@ const socketIo = require("socket.io")(server, {
     }
 });
 
-const connection = require("./db");
-const users = require('./models/user');
-const settings = require('./models/setting');
-const admins = require('./models/admin');
+// const connection = require("./db");
+const mongoose = require("mongoose");
 
-connection.once("open", async () => {
+var uri = process.env.MONGODB_URI || "mongodb://userAdmin:baooibao1@202.92.6.135:27017/hd";
+
+mongoose.connect(uri).then( async () => {
     console.log("MongoDB database connection established successfully");
-
     // get first setting
     const settingData = await settings.findOne({}).lean().exec();
 
@@ -42,7 +41,6 @@ connection.once("open", async () => {
 
     const adminData = await admins.find({}).lean().exec();
 
-
     if (!adminData.length) {
         const admin = new admins()
         admin.username = 'admin';
@@ -58,6 +56,16 @@ connection.once("open", async () => {
             await admin.save();
         }
     }
+}).catch((err) => { console.error(err); })
+
+const users = require('./models/user');
+const settings = require('./models/setting');
+const admins = require('./models/admin');
+
+connection.once("open", async () => {
+    console.log("MongoDB database connection established successfully");
+
+
 });
 
 var storage = multer.diskStorage({
