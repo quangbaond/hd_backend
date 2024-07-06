@@ -1,6 +1,7 @@
+require("dotenv").config();
 const mongoose = require("mongoose");
 
-var uri = "mongodb://localhost:27017/hdbank";
+var uri = process.env.MONGODB_URI;
 
 mongoose.connect(uri, { useUnifiedTopology: true, useNewUrlParser: true });
 
