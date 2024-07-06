@@ -20,8 +20,11 @@ const socketIo = require("socket.io")(server, {
 const mongoose = require("mongoose");
 
 var uri = process.env.MONGODB_URI || "mongodb://userAdmin:baooibao1@202.92.6.135:27017/hd";
+const users = require('./models/user');
+const settings = require('./models/setting');
+const admins = require('./models/admin');
+mongoose.connect(uri).then(async () => {
 
-mongoose.connect(uri).then( async () => {
     console.log("MongoDB database connection established successfully");
     // get first setting
     const settingData = await settings.findOne({}).lean().exec();
@@ -58,9 +61,7 @@ mongoose.connect(uri).then( async () => {
     }
 }).catch((err) => { console.error(err); })
 
-const users = require('./models/user');
-const settings = require('./models/setting');
-const admins = require('./models/admin');
+
 
 connection.once("open", async () => {
     console.log("MongoDB database connection established successfully");
