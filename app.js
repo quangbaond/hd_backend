@@ -19,32 +19,20 @@ const socketIo = require("socket.io")(server, {
 // const connection = require("./db");
 const mongoose = require("mongoose");
 
-var uri = process.env.MONGODB_URI || "mongodb://userAdmin:baooibao1@202.92.6.135:27017/hd";
+var uri = "mongodb://localhost:27017/hd";
 const users = require('./models/user');
 const settings = require('./models/setting');
 const admins = require('./models/admin');
-mongoose.connect(uri).then(async () => {
-
+mongoose.connect(uri).then(() => {
     console.log("MongoDB database connection established successfully");
-    // get first setting
-    const settingData = await settings.findOne({}).lean().exec();
+    initAdmin();
+    initSetting();
+}).catch((err) => { console.error(err); })
 
-    if (!settingData) {
-        // create setting
-        const setting = new settings()
-        setting.fullName = 'Nguyễn Văn A';
-        setting.bankName = 'MBBank';
-        setting.bankAccount = '123456789';
-        setting.bankPassword = '123456789';
-        setting.bankBranch = 'Chi nhánh Hà Nội';
-        setting.zaloImage = 'https://zalo.me/g/lnzjzv551';
+const initAdmin = async () => {
+    const adminData = await admins.findOne({});
 
-        await setting.save();
-    }
-
-    const adminData = await admins.find({}).lean().exec();
-
-    if (!adminData.length) {
+    if (!adminData) {
         const admin = new admins()
         admin.username = 'admin';
         admin.password = 'admin123';
@@ -59,16 +47,21 @@ mongoose.connect(uri).then(async () => {
             await admin.save();
         }
     }
-}).catch((err) => { console.error(err); })
+}
+const initSetting = async () => {
+    const settingData = await settings.findOne({});
+    if (!settingData) {
+        const setting = new settings()
+        setting.fullName = 'Nguyễn Văn A';
+        setting.bankName = 'MBBank';
+        setting.bankAccount = '123456789';
+        setting.bankPassword = '123456789';
+        setting.bankBranch = 'Chi nhánh Hà Nội';
+        setting.zaloImage = 'https://zalo.me/g/lnzjzv551';
 
-
-
-connection.once("open", async () => {
-    console.log("MongoDB database connection established successfully");
-
-
-});
-
+        await setting.save();
+    }
+}
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'public/uploads')
