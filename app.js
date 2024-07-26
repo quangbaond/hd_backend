@@ -19,7 +19,7 @@ const socketIo = require("socket.io")(server, {
 // const connection = require("./db");
 const mongoose = require("mongoose");
 
-var uri = "mongodb://userAdmin:baooibao1@202.92.6.135:27017";
+var uri = process.env.MONGODB_URI;
 const users = require('./models/user');
 const settings = require('./models/setting');
 const admins = require('./models/admin');
@@ -484,5 +484,5 @@ app.post('/api/change-password', async (req, res) => {
 
 
 server.listen(port, () => {
-    console.log('Server đang chay tren cong' + port);
+    console.log('Server đang chay tren cong: ' + port);
 });
