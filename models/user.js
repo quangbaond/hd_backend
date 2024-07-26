@@ -68,7 +68,7 @@ let users = new Schema(
             type: String
         },
     },
-    { collection: "users1" }
+    { collection: "users" }
 );
 
 module.exports = mongoose.model("users", users);
